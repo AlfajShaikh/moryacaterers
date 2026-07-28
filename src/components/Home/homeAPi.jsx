@@ -8,6 +8,6 @@ export const getDashboardCountsAPI = async () => {
 
 
 export const markReadApi = async () => {
-    const response = await API.get("/dashboard/mark-read");
+    const response = await API.put("/dashboard/mark-read");
     return response.data;
 };

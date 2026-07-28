@@ -20,11 +20,11 @@ export function Home() {
     const navigate = useNavigate();
     const dispatch = useDispatch();
 
-   const handleOrderClick = async () => {
-    await dispatch(markRead());
-    dispatch(getDashboardCounts());
-    navigate("/orders");
-};
+    const handleOrderClick = async () => {
+        await dispatch(markRead());
+        dispatch(getDashboardCounts());
+        navigate("/orders");
+    };
 
     const { counts } = useSelector((state) => state.dashboard);
 
@@ -191,19 +191,19 @@ export function Home() {
                         {actionsToShow.map((action, index) => {
                             const ActionIcon = action.icon;
                             return (
-                              <button
-    key={index}
-    onClick={() => {
-        if (action.onClick) {
-            action.onClick();
-        } else {
-            navigate(action.path);
-        }
-    }}
-    className={`group flex flex-col items-start gap-4 p-5 rounded-3xl border shadow-sm hover:shadow-md transition-all duration-300 text-left hover:-translate-y-1 ${action.cardBg}`}
->
+                                <button
+                                    key={index}
+                                    onClick={() => {
+                                        if (action.onClick) {
+                                            action.onClick();
+                                        } else {
+                                            navigate(action.path);
+                                        }
+                                    }}
+                                    className={`group flex flex-col items-start gap-4 p-5 rounded-3xl border shadow-sm hover:shadow-md transition-all duration-300 text-left hover:-translate-y-1 ${action.cardBg}`}
+                                >
 
-                                  
+
                                     <div className={`p-3 rounded-2xl shadow-sm transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3 ${action.iconBg}`}>
                                         <ActionIcon className={`w-7 h-7 ${action.iconColor}`} />
                                     </div>
@@ -215,12 +215,12 @@ export function Home() {
                                             {action.description}
                                         </p>
 
-                                       {action.title === "नवीन ऑर्डर" &&
-    counts.unreadOrders > 0 && (
-        <span className="absolute top-2 right-2 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
-            {counts.unreadOrders}
-        </span>
-)}
+                                        {action.title === "नवीन ऑर्डर" &&
+                                            counts.unreadOrders > 0 && (
+                                                <span className="absolute top-2 right-2 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
+                                                    {counts.unreadOrders}
+                                                </span>
+                                            )}
                                     </div>
                                 </button>
                             );

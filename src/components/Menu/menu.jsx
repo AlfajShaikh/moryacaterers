@@ -24,15 +24,15 @@ export function Menu() {
     });
 
     const eventTypes = [
-    "लग्न",
-    "साखरपुडा",
-    "वाढदिवस",
-    "गृहप्रवेश",
-    "मुंज",
-    "नामकरण",
-    "कॉर्पोरेट इव्हेंट",
-    "इतर"
-];
+        "लग्न",
+        "साखरपुडा",
+        "वाढदिवस",
+        "गृहप्रवेश",
+        "मुंज",
+        "नामकरण",
+        "कॉर्पोरेट इव्हेंट",
+        "इतर"
+    ];
 
 
     const [eventDetails, setEventDetails] = useState({
@@ -156,28 +156,48 @@ export function Menu() {
 
     const handleConfirmOrder = async () => {
 
-        const shifts = selectedShifts.map((shift) => ({
-            shift,
+     const shifts = selectedShifts.map((shift) => {
 
-            selectedItems: selectedItems[shift].map((item) => ({
-                itemId: item._id,
-                itemName: item.itemName,
-                price: item.showPrice ? Number(item.price) : 0,
-            })),
-        }));
+    const categories = menus
+        .map((category) => {
+
+            const items = category.menuItems
+                .filter((menuItem) =>
+                    selectedItems[shift].some(
+                        (selected) => selected._id === menuItem._id
+                    )
+                )
+                .map((item) => ({
+                    itemId: item._id,
+                    itemName: item.itemName,
+                    price: item.showPrice ? Number(item.price) : 0,
+                }));
+
+            if (items.length === 0) return null;
+
+            return {
+                category: category.category,
+                selectedItems: items,
+            };
+        })
+        .filter(Boolean);
+
+    return {
+        shift,
+        categories,
+    };
+});
 
 
-        const payload = {
-            customerName: customer.name,
-            mobile: customer.mobile,
-            whatsapp: customer.whatsapp,
-            email: customer.email,
-
-            eventDate: eventDetails.eventDate,
-            eventType: eventDetails.eventType,
-
-            shifts,
-        };
+       const payload = {
+    customerName: customer.name,
+    mobile: customer.mobile,
+    whatsapp: customer.whatsapp,
+    email: customer.email,
+    eventDate: eventDetails.eventDate,
+    eventType: eventDetails.eventType,
+    shifts,
+};
 
         console.log(payload);
 
@@ -305,50 +325,50 @@ export function Menu() {
 
 
 
-                        <div className="mb-2">
-    <label className="text-sm font-bold text-slate-700">
-        कार्यक्रम <span className="text-rose-500">*</span>
-    </label>
+                            <div className="mb-2">
+                                <label className="text-sm font-bold text-slate-700">
+                                    कार्यक्रम <span className="text-rose-500">*</span>
+                                </label>
 
-    <div className="relative mt-2">
-        <UserIcon className="w-5 h-5 absolute left-4 top-3.5 text-slate-400 pointer-events-none" />
+                                <div className="relative mt-2">
+                                    <UserIcon className="w-5 h-5 absolute left-4 top-3.5 text-slate-400 pointer-events-none" />
 
-        <select
-            value={eventDetails.eventType}
-            onChange={(e) =>
-                setEventDetails({
-                    ...eventDetails,
-                    eventType: e.target.value,
-                })
-            }
-            className="w-full rounded-xl border border-slate-300 bg-white/50 pl-12 pr-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition appearance-none"
-        >
-            <option value="">कार्यक्रम निवडा</option>
+                                    <select
+                                        value={eventDetails.eventType}
+                                        onChange={(e) =>
+                                            setEventDetails({
+                                                ...eventDetails,
+                                                eventType: e.target.value,
+                                            })
+                                        }
+                                        className="w-full rounded-xl border border-slate-300 bg-white/50 pl-12 pr-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition appearance-none"
+                                    >
+                                        <option value="">कार्यक्रम निवडा</option>
 
-            {eventTypes.map((event, index) => (
-                <option key={index} value={event}>
-                    {event}
-                </option>
-            ))}
-        </select>
+                                        {eventTypes.map((event, index) => (
+                                            <option key={index} value={event}>
+                                                {event}
+                                            </option>
+                                        ))}
+                                    </select>
 
-        {/* Dropdown Arrow */}
-        <svg
-            className="absolute right-4 top-4 w-5 h-5 text-slate-400 pointer-events-none"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-        >
-            <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M19 9l-7 7-7-7"
-            />
-        </svg>
-    </div>
-</div>
+                                    {/* Dropdown Arrow */}
+                                    <svg
+                                        className="absolute right-4 top-4 w-5 h-5 text-slate-400 pointer-events-none"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor"
+                                    >
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth={2}
+                                            d="M19 9l-7 7-7-7"
+                                        />
+                                    </svg>
+                                </div>
+                            </div>
 
 
 
@@ -512,65 +532,83 @@ export function Menu() {
                                 <div className="bg-white/95 lg:bg-white/80 backdrop-blur-2xl border-t lg:border border-white shadow-[0_-8px_30px_rgba(0,0,0,0.12)] lg:shadow-[0_8px_30px_rgba(0,0,0,0.08)] rounded-t-3xl lg:rounded-3xl p-5 lg:p-6 flex flex-col h-[85vh] lg:h-[calc(100vh-8rem)]">
 
                                     {/* Thali Header */}
-                                    <div className="flex-shrink-0 flex items-center justify-between mb-5 pb-4 border-b border-slate-100">
-                                        <div className="flex items-center gap-3">
-                                            <div className="p-2.5 lg:p-3 bg-gradient-to-br from-blue-50 to-indigo-50 text-blue-600 rounded-2xl shadow-sm border border-blue-100/50">
-                                                <ShoppingCartIcon className="w-5 h-5 lg:w-6 lg:h-6" />
-                                            </div>
-                                            <div>
-                                                <h2 className="text-lg lg:text-xl font-extrabold text-slate-800 flex items-center gap-2">
-                                                    तुमची थाळी
-                                                    {selectedShifts.length > 1 && <span className="bg-blue-100 text-blue-700 text-[10px] lg:text-xs px-2 py-0.5 rounded-md uppercase tracking-wider">{activeShift}</span>}
-                                                </h2>
-                                                <p className="text-xs lg:text-sm font-semibold text-slate-500">
-                                                    निवडलेले पदार्थ : {(((selectedItems[activeShift] || []) || []) || []).length}
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            {(((selectedItems[activeShift] || []) || []) || []).length > 0 && (
-                                                <button onClick={() => setSelectedItems({ ...selectedItems, [activeShift]: [] })} className="text-xs font-bold text-rose-500 hover:text-rose-700 bg-rose-50 px-3 py-1.5 rounded-full transition-colors">
-                                                    रिकामी करा
-                                                </button>
-                                            )}
-                                            <button onClick={() => setIsCartOpen(false)} className="lg:hidden p-1.5 bg-slate-100 text-slate-500 rounded-full hover:bg-slate-200">
-                                                <XMarkIcon className="w-5 h-5" />
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    {/* Animated Thali Plate Section */}
-                                    <div className="flex-1 flex flex-col items-center justify-center py-2 lg:py-6 overflow-hidden">
+                                    {/* List Format Thali Section with Categories */}
+                                    <div className="flex-1 py-2 lg:py-4 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent">
                                         {(((selectedItems[activeShift] || []) || []) || []).length === 0 ? (
-                                            <div className="relative w-56 h-56 sm:w-64 sm:h-64 rounded-full border-4 border-dashed border-slate-300/60 flex items-center justify-center animate-in fade-in duration-700">
-                                                <div className="text-center opacity-60">
-                                                    <div className="w-14 h-14 mx-auto bg-slate-100 rounded-full flex items-center justify-center mb-3">
-                                                        <ShoppingCartIcon className="w-7 h-7 text-slate-400" />
-                                                    </div>
-                                                    <p className="font-bold text-slate-500 text-base lg:text-lg">थाळी रिकामी आहे</p>
-                                                    <p className="text-xs text-slate-400 mt-1">मेनूमधून पदार्थ निवडा</p>
+                                            <div className="h-full flex flex-col items-center justify-center animate-in fade-in duration-500">
+                                                <div className="w-16 h-16 mx-auto bg-slate-50 rounded-full flex items-center justify-center mb-4 border-2 border-dashed border-slate-200">
+                                                    <ShoppingCartIcon className="w-8 h-8 text-slate-300" />
                                                 </div>
+                                                <p className="font-bold text-slate-500 text-base lg:text-lg">थाळी रिकामी आहे</p>
+                                                <p className="text-sm text-slate-400 mt-1">मेनूमधून पदार्थ निवडा</p>
                                             </div>
                                         ) : (
-                                            <div className="relative w-[260px] h-[260px] sm:w-72 sm:h-72 lg:w-84 lg:h-84 rounded-full shadow-[inset_-8px_-8px_20px_rgba(0,0,0,0.1),inset_8px_8px_20px_rgba(255,255,255,0.8),0_15px_35px_rgba(0,0,0,0.15)] bg-gradient-to-br from-slate-200 via-slate-100 to-slate-300 border-[5px] lg:border-[6px] border-slate-300 flex flex-wrap content-center justify-center gap-x-3 gap-y-6 lg:gap-x-4 lg:gap-y-7 p-4 lg:p-6 transition-all duration-500">
-                                                <div className="absolute inset-2.5 lg:inset-3 rounded-full border border-slate-300/60 pointer-events-none shadow-[inset_0_1px_3px_rgba(0,0,0,0.05)]"></div>
-                                                {((selectedItems[activeShift] || []) || []).map((item) => (
-                                                    <div key={item._id} onClick={(e) => { e.stopPropagation(); handleToggleItem(item); }} className="group relative flex flex-col items-center cursor-pointer animate-in zoom-in-50 spin-in-[15deg] duration-500 hover:z-20">
-                                                        <div className="relative w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 rounded-full shadow-[0_6px_12px_rgba(0,0,0,0.25)] bg-white overflow-hidden transition-transform duration-300 group-hover:scale-110 border-2 border-slate-200 z-10">
-                                                            <img src={item.url} alt={item.itemName} className="w-full h-full object-cover" onError={(e) => { e.target.style.display = 'none' }} />
-                                                            <div className="absolute inset-0 bg-rose-500/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 backdrop-blur-[2px]">
-                                                                <TrashIcon className="w-5 h-5 lg:w-6 lg:h-6 text-white" />
+                                            <div className="space-y-4 animate-in slide-in-from-bottom-4 duration-500">
+                                                {menus.map((category) => {
+                                                    // Find items in this category that are currently selected in the active shift
+                                                    const selectedInCategory = category.menuItems.filter((menuItem) =>
+                                                        (((selectedItems[activeShift] || []) || []) || []).some(
+                                                            (selected) => selected._id === menuItem._id
+                                                        )
+                                                    );
+
+                                                    if (selectedInCategory.length === 0) return null;
+
+                                                    return (
+                                                        <div key={category._id} className="bg-slate-50/50 rounded-2xl p-3 lg:p-4 border border-slate-100">
+                                                            <h3 className="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
+                                                                <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                                                                {category.category}
+                                                                <span className="bg-slate-200 text-slate-600 text-[10px] px-2 py-0.5 rounded-full ml-auto">
+                                                                    {selectedInCategory.length}
+                                                                </span>
+                                                            </h3>
+
+                                                            <div className="space-y-2">
+                                                                {selectedInCategory.map((item) => (
+                                                                    <div
+                                                                        key={item._id}
+                                                                        className="group flex items-center justify-between bg-white p-2.5 rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow"
+                                                                    >
+                                                                        <div className="flex items-center gap-3 overflow-hidden">
+                                                                            <img
+                                                                                src={item.url}
+                                                                                alt={item.itemName}
+                                                                                className="w-12 h-12 rounded-lg object-cover bg-slate-100 flex-shrink-0"
+                                                                                onError={(e) => { e.target.style.display = 'none' }}
+                                                                            />
+                                                                            <div className="flex flex-col min-w-0">
+                                                                                <span className="text-sm font-bold text-slate-800 truncate">
+                                                                                    {item.itemName}
+                                                                                </span>
+                                                                                {item.showPrice && (
+                                                                                    <span className="text-xs font-black text-emerald-600 mt-0.5">
+                                                                                        ₹{item.price}
+                                                                                    </span>
+                                                                                )}
+                                                                            </div>
+                                                                        </div>
+
+                                                                        <button
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                handleToggleItem(item);
+                                                                            }}
+                                                                            className="p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors flex-shrink-0 ml-2"
+                                                                            title="काढून टाका"
+                                                                        >
+                                                                            <TrashIcon className="w-5 h-5" />
+                                                                        </button>
+                                                                    </div>
+                                                                ))}
                                                             </div>
                                                         </div>
-                                                        <div className="absolute -bottom-3 sm:-bottom-4 z-30 bg-white/95 backdrop-blur-sm shadow-md border border-slate-200/60 px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full flex flex-col items-center justify-center transform group-hover:scale-110 group-hover:-translate-y-1 transition-all duration-300 min-w-[56px] max-w-[72px] lg:min-w-[64px] lg:max-w-[80px]">
-                                                            <span className="text-[9px] sm:text-[10px] lg:text-[11px] font-bold text-slate-800 truncate w-full text-center leading-tight">{item.itemName}</span>
-                                                            {item.showPrice && <span className="text-[8px] sm:text-[9px] lg:text-[10px] font-black text-blue-600 mt-[1px] lg:mt-0.5 leading-none">₹{item.price}</span>}
-                                                        </div>
-                                                    </div>
-                                                ))}
+                                                    );
+                                                })}
                                             </div>
                                         )}
                                     </div>
+
 
                                     {/* Total and Action Button */}
                                     <div className="flex-shrink-0 pt-4 lg:pt-5 mt-2 border-t border-slate-100">
