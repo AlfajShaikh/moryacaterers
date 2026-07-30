@@ -6,13 +6,19 @@ import {
     ShoppingCartIcon,
     BanknotesIcon
 } from "@heroicons/react/24/solid";
-import { ChatBubbleLeftRightIcon, EnvelopeIcon, PhoneIcon, PlusCircleIcon, TrashIcon, UserIcon, XMarkIcon, ClockIcon } from "@heroicons/react/24/outline";
+import { ChatBubbleLeftRightIcon, EnvelopeIcon, PhoneIcon, PlusCircleIcon, TrashIcon, UserIcon, XMarkIcon, ClockIcon, CalendarDaysIcon, TagIcon } from "@heroicons/react/24/outline";
+import { SelectEventCalenderModel } from "../EventCalendarModal/SelectEventCalenderModel/selectEventCalenderModel";
 
 export function Menu() {
     const dispatch = useDispatch();
     const SHIFT_OPTIONS = ["सकाळ", "संध्याकाळ", "रात्र"];
 
     const [selectedShifts, setSelectedShifts] = useState([]);
+
+    // NEW STATE: Tracks which shifts are already booked for the selected date
+    const [bookedShifts, setBookedShifts] = useState([]);
+
+    const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
     const [customer, setCustomer] = useState({
         name: "",
@@ -34,14 +40,12 @@ export function Menu() {
         "इतर"
     ];
 
-
     const [eventDetails, setEventDetails] = useState({
         eventDate: "",
         eventType: "",
     });
 
     const createPayload = () => {
-
         const shifts = Object.entries(selectedItems)
             .filter(([_, items]) => items.length > 0)
             .map(([shift, items]) => ({
@@ -53,7 +57,6 @@ export function Menu() {
                 }))
             }));
 
-
         return {
             customerName: customer.name,
             mobile: customer.mobile,
@@ -62,9 +65,6 @@ export function Menu() {
             shifts
         };
     };
-
-
-
 
     const [showMenu, setShowMenu] = useState(false);
     const { menus, loading } = useSelector((state) => state.menuList);
@@ -153,82 +153,57 @@ export function Menu() {
         );
     }
 
-
     const handleConfirmOrder = async () => {
+        const shifts = selectedShifts.map((shift) => {
+            const categories = menus
+                .map((category) => {
+                    const items = category.menuItems
+                        .filter((menuItem) =>
+                            selectedItems[shift].some(
+                                (selected) => selected._id === menuItem._id
+                            )
+                        )
+                        .map((item) => ({
+                            itemId: item._id,
+                            itemName: item.itemName,
+                            price: item.showPrice ? Number(item.price) : 0,
+                        }));
 
-     const shifts = selectedShifts.map((shift) => {
+                    if (items.length === 0) return null;
 
-    const categories = menus
-        .map((category) => {
-
-            const items = category.menuItems
-                .filter((menuItem) =>
-                    selectedItems[shift].some(
-                        (selected) => selected._id === menuItem._id
-                    )
-                )
-                .map((item) => ({
-                    itemId: item._id,
-                    itemName: item.itemName,
-                    price: item.showPrice ? Number(item.price) : 0,
-                }));
-
-            if (items.length === 0) return null;
+                    return {
+                        category: category.category,
+                        selectedItems: items,
+                    };
+                })
+                .filter(Boolean);
 
             return {
-                category: category.category,
-                selectedItems: items,
+                shift,
+                categories,
             };
-        })
-        .filter(Boolean);
+        });
 
-    return {
-        shift,
-        categories,
-    };
-});
-
-
-       const payload = {
-    customerName: customer.name,
-    mobile: customer.mobile,
-    whatsapp: customer.whatsapp,
-    email: customer.email,
-    eventDate: eventDetails.eventDate,
-    eventType: eventDetails.eventType,
-    shifts,
-};
-
-        console.log(payload);
+        const payload = {
+            customerName: customer.name,
+            mobile: customer.mobile,
+            whatsapp: customer.whatsapp,
+            email: customer.email,
+            eventDate: eventDetails.eventDate,
+            eventType: eventDetails.eventType,
+            shifts,
+        };
 
         try {
-
             await dispatch(saveCustomerMenu(payload)).unwrap();
-
             alert("Order Saved Successfully");
 
             // reset customer
-
-            setCustomer({
-                name: "",
-                mobile: "",
-                whatsapp: "",
-                email: "",
-            });
-
-            setEventDetails({
-                eventDate: "",
-                eventType: "",
-            });
-
+            setCustomer({ name: "", mobile: "", whatsapp: "", email: "" });
+            setEventDetails({ eventDate: "", eventType: "" });
             setSelectedShifts([]);
-
-            setSelectedItems({
-                "सकाळ": [],
-                "संध्याकाळ": [],
-                "रात्र": [],
-            });
-
+            setBookedShifts([]); // Reset booked shifts
+            setSelectedItems({ "सकाळ": [], "संध्याकाळ": [], "रात्र": [] });
             setShowMenu(false);
             setActiveShift("सकाळ");
 
@@ -263,24 +238,41 @@ export function Menu() {
                         <div className="mb-8">
                             <label className="text-lg font-extrabold text-slate-800 flex items-center gap-2 mb-4">
                                 <ClockIcon className="w-6 h-6 text-blue-600" />
-
                                 कार्यक्रमाची शिफ्ट (किंवा शिफ्ट्स) निवडा <span className="text-rose-500">*</span>
                             </label>
+
+                            {!eventDetails.eventDate && (
+                                <p className="text-sm font-bold text-amber-600 mb-3 bg-amber-50 px-4 py-2 rounded-xl border border-amber-200">
+                                    कृपया शिफ्ट्स निवडण्यापूर्वी खाली कार्यक्रमाचा दिनांक निवडा.
+                                </p>
+                            )}
+
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                 {SHIFT_OPTIONS.map((shift) => {
                                     const checked = selectedShifts.includes(shift);
+                                    // MODIFIED: Check if shift is in the booked array
+                                    const isBooked = bookedShifts.includes(shift);
+
                                     return (
                                         <button
                                             key={shift}
                                             type="button"
+                                            disabled={isBooked || !eventDetails.eventDate}
                                             onClick={() => {
                                                 if (checked) setSelectedShifts(selectedShifts.filter((s) => s !== shift));
                                                 else setSelectedShifts([...selectedShifts, shift]);
                                             }}
-                                            className={`rounded-2xl py-4 font-bold text-lg border-2 transition-all transform active:scale-95
-                                                ${checked ? "bg-blue-50 border-blue-600 text-blue-700 shadow-md" : "bg-white border-slate-200 text-slate-600 hover:border-blue-300 hover:bg-slate-50"}`}
+                                            className={`rounded-2xl py-4 font-bold text-lg border-2 transition-all transform active:scale-95 flex flex-col items-center justify-center gap-1.5
+                                                ${!eventDetails.eventDate ? "bg-slate-50 border-slate-200 text-slate-400 cursor-not-allowed" :
+                                                    isBooked ? "bg-rose-50 border-rose-200 text-slate-400 cursor-not-allowed opacity-75" :
+                                                        checked ? "bg-blue-50 border-blue-600 text-blue-700 shadow-md" : "bg-white border-slate-200 text-slate-600 hover:border-blue-300 hover:bg-slate-50"}`}
                                         >
-                                            {shift}
+                                            <span>{shift}</span>
+                                            {isBooked && (
+                                                <span className="text-[10px] font-black text-rose-600 uppercase tracking-widest px-2 py-0.5 bg-white rounded-md border border-rose-200 shadow-sm">
+                                                    आधीच बुक
+                                                </span>
+                                            )}
                                         </button>
                                     );
                                 })}
@@ -300,6 +292,22 @@ export function Menu() {
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+                            <div className="mb-2">
+                                <label className="text-sm font-bold text-slate-700">कार्यक्रम दिनांक <span className="text-rose-500">*</span></label>
+                                <div className="relative mt-2">
+                                    <CalendarDaysIcon className="w-5 h-5 absolute left-4 top-3.5 text-slate-400 pointer-events-none" />
+                                    <input
+                                        type="text"
+                                        readOnly
+                                        placeholder="कार्यक्रम दिनांक निवडा"
+                                        value={eventDetails.eventDate}
+                                        onClick={() => setIsCalendarOpen(true)}
+                                        className="w-full rounded-xl border border-slate-300 bg-white/50 pl-12 pr-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition cursor-pointer hover:bg-slate-50 font-bold text-indigo-700"
+                                    />
+                                </div>
+                            </div>
+
                             <div className="mb-2">
                                 <label className="text-sm font-bold text-slate-700">ग्राहकाचे नाव<span className="text-rose-500">*</span></label>
                                 <div className="relative mt-2">
@@ -308,30 +316,13 @@ export function Menu() {
                                 </div>
                             </div>
 
-
-                            <div className="mb-2">
-                                <label className="text-sm font-bold text-slate-700">कार्यक्रम दिनाक  <span className="text-rose-500">*</span></label>
-                                <div className="relative mt-2">
-                                    <UserIcon className="w-5 h-5 absolute left-4 top-3.5 text-slate-400" />
-                                    <input type="date" placeholder="तुमचे नाव लिहा" value={eventDetails.eventDate} onChange={(e) =>
-                                        setEventDetails({
-                                            ...eventDetails,
-                                            eventDate: e.target.value
-                                        })
-                                    } className="w-full rounded-xl border border-slate-300 bg-white/50 pl-12 pr-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition" />
-                                </div>
-                            </div>
-
-
-
-
                             <div className="mb-2">
                                 <label className="text-sm font-bold text-slate-700">
                                     कार्यक्रम <span className="text-rose-500">*</span>
                                 </label>
 
                                 <div className="relative mt-2">
-                                    <UserIcon className="w-5 h-5 absolute left-4 top-3.5 text-slate-400 pointer-events-none" />
+                                    <TagIcon className="w-5 h-5 absolute left-4 top-3.5 text-slate-400 pointer-events-none" />
 
                                     <select
                                         value={eventDetails.eventType}
@@ -360,20 +351,10 @@ export function Menu() {
                                         viewBox="0 0 24 24"
                                         stroke="currentColor"
                                     >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth={2}
-                                            d="M19 9l-7 7-7-7"
-                                        />
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                                     </svg>
                                 </div>
                             </div>
-
-
-
-
-
 
                             <div className="mb-2">
                                 <label className="text-sm font-bold text-slate-700">मोबाईल क्रमांक <span className="text-rose-500">*</span></label>
@@ -451,7 +432,7 @@ export function Menu() {
                                                     ? "bg-amber-400"
                                                     : activeShift === "संध्याकाळ"
                                                         ? "bg-orange-500"
-                                                        : "bg-indigo-500" ? "bg-amber-400" : activeShift === "Evening" ? "bg-orange-500" : "bg-indigo-500"}`}></span>
+                                                        : "bg-indigo-500"}`}></span>
                                                 {category.category}
                                             </h2>
                                             <div className="h-px bg-gradient-to-r from-slate-200 to-transparent flex-1 mt-1"></div>
@@ -532,81 +513,112 @@ export function Menu() {
                                 <div className="bg-white/95 lg:bg-white/80 backdrop-blur-2xl border-t lg:border border-white shadow-[0_-8px_30px_rgba(0,0,0,0.12)] lg:shadow-[0_8px_30px_rgba(0,0,0,0.08)] rounded-t-3xl lg:rounded-3xl p-5 lg:p-6 flex flex-col h-[85vh] lg:h-[calc(100vh-8rem)]">
 
                                     {/* Thali Header */}
+                                    <div className="flex-shrink-0 flex items-center justify-between mb-5 pb-4 border-b border-slate-100">
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-2.5 lg:p-3 bg-gradient-to-br from-blue-50 to-indigo-50 text-blue-600 rounded-2xl shadow-sm border border-blue-100/50">
+                                                <ShoppingCartIcon className="w-5 h-5 lg:w-6 lg:h-6" />
+                                            </div>
+                                            <div>
+                                                <h2 className="text-lg lg:text-xl font-extrabold text-slate-800 flex items-center gap-2">
+                                                    तुमची थाळी
+                                                    {selectedShifts.length > 1 && <span className="bg-blue-100 text-blue-700 text-[10px] lg:text-xs px-2 py-0.5 rounded-md uppercase tracking-wider">{activeShift}</span>}
+                                                </h2>
+                                                <p className="text-xs lg:text-sm font-semibold text-slate-500">
+                                                    निवडलेले पदार्थ : {(((selectedItems[activeShift] || []) || []) || []).length}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            {/* Clear Cart Button */}
+                                            {(((selectedItems[activeShift] || []) || []) || []).length > 0 && (
+                                                <button onClick={() => setSelectedItems({ ...selectedItems, [activeShift]: [] })} className="text-xs font-bold text-rose-500 hover:text-rose-700 bg-rose-50 px-3 py-1.5 rounded-full transition-colors">
+                                                    रिकामी करा
+                                                </button>
+                                            )}
+                                            {/* Close Button for Mobile */}
+                                            <button
+                                                onClick={() => setIsCartOpen(false)}
+                                                className="lg:hidden p-1.5 bg-slate-100 text-slate-500 rounded-full hover:bg-slate-200 transition-colors"
+                                            >
+                                                <XMarkIcon className="w-5 h-5" />
+                                            </button>
+                                        </div>
+                                    </div>
+
                                     {/* List Format Thali Section with Categories */}
-                                    <div className="flex-1 py-2 lg:py-4 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent">
-                                        {(((selectedItems[activeShift] || []) || []) || []).length === 0 ? (
-                                            <div className="h-full flex flex-col items-center justify-center animate-in fade-in duration-500">
-                                                <div className="w-16 h-16 mx-auto bg-slate-50 rounded-full flex items-center justify-center mb-4 border-2 border-dashed border-slate-200">
-                                                    <ShoppingCartIcon className="w-8 h-8 text-slate-300" />
-                                                </div>
-                                                <p className="font-bold text-slate-500 text-base lg:text-lg">थाळी रिकामी आहे</p>
-                                                <p className="text-sm text-slate-400 mt-1">मेनूमधून पदार्थ निवडा</p>
+                                    <div className="flex-1 py-2 lg:py-4 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent">                                        {(((selectedItems[activeShift] || []) || []) || []).length === 0 ? (
+
+                                        <div className="h-full flex flex-col items-center justify-center animate-in fade-in duration-500">
+                                            <div className="w-16 h-16 mx-auto bg-slate-50 rounded-full flex items-center justify-center mb-4 border-2 border-dashed border-slate-200">
+                                                <ShoppingCartIcon className="w-8 h-8 text-slate-300" />
                                             </div>
-                                        ) : (
-                                            <div className="space-y-4 animate-in slide-in-from-bottom-4 duration-500">
-                                                {menus.map((category) => {
-                                                    // Find items in this category that are currently selected in the active shift
-                                                    const selectedInCategory = category.menuItems.filter((menuItem) =>
-                                                        (((selectedItems[activeShift] || []) || []) || []).some(
-                                                            (selected) => selected._id === menuItem._id
-                                                        )
-                                                    );
+                                            <p className="font-bold text-slate-500 text-base lg:text-lg">थाळी रिकामी आहे</p>
+                                            <p className="text-sm text-slate-400 mt-1">मेनूमधून पदार्थ निवडा</p>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-4 animate-in slide-in-from-bottom-4 duration-500">
+                                            {menus.map((category) => {
+                                                const selectedInCategory = category.menuItems.filter((menuItem) =>
+                                                    (((selectedItems[activeShift] || []) || []) || []).some(
+                                                        (selected) => selected._id === menuItem._id
+                                                    )
+                                                );
 
-                                                    if (selectedInCategory.length === 0) return null;
+                                                if (selectedInCategory.length === 0) return null;
 
-                                                    return (
-                                                        <div key={category._id} className="bg-slate-50/50 rounded-2xl p-3 lg:p-4 border border-slate-100">
-                                                            <h3 className="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
-                                                                <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-                                                                {category.category}
-                                                                <span className="bg-slate-200 text-slate-600 text-[10px] px-2 py-0.5 rounded-full ml-auto">
-                                                                    {selectedInCategory.length}
-                                                                </span>
-                                                            </h3>
+                                                return (
+                                                    <div key={category._id} className="bg-slate-50/50 rounded-2xl p-3 lg:p-4 border border-slate-100">
+                                                        <h3 className="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
+                                                            <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                                                            {category.category}
+                                                            <span className="bg-slate-200 text-slate-600 text-[10px] px-2 py-0.5 rounded-full ml-auto">
+                                                                {selectedInCategory.length}
+                                                            </span>
+                                                        </h3>
 
-                                                            <div className="space-y-2">
-                                                                {selectedInCategory.map((item) => (
-                                                                    <div
-                                                                        key={item._id}
-                                                                        className="group flex items-center justify-between bg-white p-2.5 rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow"
-                                                                    >
-                                                                        <div className="flex items-center gap-3 overflow-hidden">
-                                                                            <img
-                                                                                src={item.url}
-                                                                                alt={item.itemName}
-                                                                                className="w-12 h-12 rounded-lg object-cover bg-slate-100 flex-shrink-0"
-                                                                                onError={(e) => { e.target.style.display = 'none' }}
-                                                                            />
-                                                                            <div className="flex flex-col min-w-0">
-                                                                                <span className="text-sm font-bold text-slate-800 truncate">
-                                                                                    {item.itemName}
+                                                        <div className="space-y-2">
+                                                            {selectedInCategory.map((item) => (
+                                                                <div
+                                                                    key={item._id}
+                                                                    className="group flex items-center justify-between bg-white p-2.5 rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow"
+                                                                >
+                                                                    <div className="flex items-center gap-3 overflow-hidden">
+                                                                        <img
+                                                                            src={item.url}
+                                                                            alt={item.itemName}
+                                                                            className="w-12 h-12 rounded-lg object-cover bg-slate-100 flex-shrink-0"
+                                                                            onError={(e) => { e.target.style.display = 'none' }}
+                                                                        />
+                                                                        <div className="flex flex-col min-w-0">
+                                                                            <span className="text-sm font-bold text-slate-800 truncate">
+                                                                                {item.itemName}
+                                                                            </span>
+                                                                            {item.showPrice && (
+                                                                                <span className="text-xs font-black text-emerald-600 mt-0.5">
+                                                                                    ₹{item.price}
                                                                                 </span>
-                                                                                {item.showPrice && (
-                                                                                    <span className="text-xs font-black text-emerald-600 mt-0.5">
-                                                                                        ₹{item.price}
-                                                                                    </span>
-                                                                                )}
-                                                                            </div>
+                                                                            )}
                                                                         </div>
-
-                                                                        <button
-                                                                            onClick={(e) => {
-                                                                                e.stopPropagation();
-                                                                                handleToggleItem(item);
-                                                                            }}
-                                                                            className="p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors flex-shrink-0 ml-2"
-                                                                            title="काढून टाका"
-                                                                        >
-                                                                            <TrashIcon className="w-5 h-5" />
-                                                                        </button>
                                                                     </div>
-                                                                ))}
-                                                            </div>
+
+                                                                    <button
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            handleToggleItem(item);
+                                                                        }}
+                                                                        className="p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors flex-shrink-0 ml-2"
+                                                                        title="काढून टाका"
+                                                                    >
+                                                                        <TrashIcon className="w-5 h-5" />
+                                                                    </button>
+                                                                </div>
+                                                            ))}
                                                         </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
                                     </div>
 
 
@@ -632,7 +644,7 @@ export function Menu() {
                                                     (shift) => selectedItems[shift].length === 0
                                                 )
                                             }
-                                            className="w-full relative overflow-hidden bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-base lg:text-lg py-3.5 lg:py-4 rounded-2xl shadow-[0_8px_20px_rgba(79,70,229,0.3)] transform hover:-translate-y-0.5 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none mb-28 lg:mb-0"
+                                            className="w-full relative overflow-hidden bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-base lg:text-lg py-3.5 lg:py-4 rounded-2xl shadow-[0_8px_20px_rgba(79,70,229,0.3)] transform hover:-translate-y-0.5 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none mb-20 lg:mb-0"
                                         >
                                             <span className="relative z-10 flex items-center justify-center gap-2">
                                                 ऑर्डर निश्चित करा
@@ -663,6 +675,27 @@ export function Menu() {
                     </button>
                 </div>
             )}
+
+            {/* MODIFIED: Catch the booked shifts array from the Calendar component */}
+            <SelectEventCalenderModel
+                isOpen={isCalendarOpen}
+                onClose={() => setIsCalendarOpen(false)}
+                onSelectDate={(date, booked) => {
+                    setEventDetails({
+                        ...eventDetails,
+                        eventDate: date,
+                    });
+
+                    // Save the booked shifts passed from the calendar
+                    const currentlyBooked = booked || [];
+                    setBookedShifts(currentlyBooked);
+
+                    // Automatically unselect any currently selected shift that is now booked
+                    setSelectedShifts(prev => prev.filter(s => !currentlyBooked.includes(s)));
+
+                    setIsCalendarOpen(false);
+                }}
+            />
         </div>
     );
 }

@@ -11,3 +11,8 @@ export const markReadApi = async () => {
     const response = await API.put("/dashboard/mark-read");
     return response.data;
 };
+
+export const calenderApi = async () => {
+    const response = await API.get("/dashboard/calendar");
+    return response.data;
+};
