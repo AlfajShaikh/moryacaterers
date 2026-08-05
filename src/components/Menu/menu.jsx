@@ -13,6 +13,20 @@ export function Menu() {
     const dispatch = useDispatch();
     const SHIFT_OPTIONS = ["सकाळ", "संध्याकाळ", "रात्र"];
 
+    // --- नवीन: Splash Screen State ---
+    const [showSplash, setShowSplash] = useState(true);
+
+    // --- नवीन: Splash Screen Timer (२.५ सेकंदानंतर मेन्यू दिसेल) ---
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setShowSplash(false);
+        }, 2500); // 2500 milliseconds = 2.5 seconds
+
+        return () => clearTimeout(timer);
+    }, []);
+
+
+
     const [selectedShifts, setSelectedShifts] = useState([]);
 
     // NEW STATE: Tracks which shifts are already booked for the selected date
@@ -191,6 +205,8 @@ export function Menu() {
             email: customer.email,
             eventDate: eventDetails.eventDate,
             eventType: eventDetails.eventType,
+            advance : "0",
+            paymentStatus:"Unpaid",
             shifts,
         };
 

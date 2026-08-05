@@ -15,3 +15,26 @@ export const deleteOrderAPI = async (id) => {
     const response = await API.delete(`/order/${id}`);
     return response.data;
 };
+
+
+export const removeOrderItemAPI = async ({
+    orderId,
+    shift,
+    category,
+    itemId,
+}) => {
+    const response = await API.put(
+        "/order/customer-menu/remove-item",
+        {},
+        {
+            params: {
+                orderId,
+                shift,
+                category,
+                itemId,
+            },
+        }
+    );
+
+    return response.data;
+};

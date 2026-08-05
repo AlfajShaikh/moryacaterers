@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import { deleteOrderAPI, getAllOrdersAPI, updateOrderAPI } from "./ordersApi";
+import { deleteOrderAPI, getAllOrdersAPI, removeOrderItemAPI, updateOrderAPI } from "./ordersApi";
 
 export const getAllOrders = createAsyncThunk(
     "orders/getAllOrders",
@@ -37,6 +37,20 @@ export const deleteOrder = createAsyncThunk(
         } catch (error) {
             return thunkAPI.rejectWithValue(
                 error.response?.data || "Unable to delete order"
+            );
+        }
+    }
+);
+
+
+export const removeOrderItem = createAsyncThunk(
+    "orders/removeOrderItem",
+    async (data, thunkAPI) => {
+        try {
+            return await removeOrderItemAPI(data);
+        } catch (error) {
+            return thunkAPI.rejectWithValue(
+                error.response?.data || "Unable to remove item"
             );
         }
     }
@@ -87,21 +101,31 @@ const ordersSlice = createSlice({
             .addCase(updateOrder.rejected, (state, action) => {
                 state.error = action.payload;
             }).addCase(deleteOrder.pending, (state) => {
-    state.loading = true;
-})
+                state.loading = true;
+            })
 
-.addCase(deleteOrder.fulfilled, (state, action) => {
-    state.loading = false;
+            .addCase(deleteOrder.fulfilled, (state, action) => {
+                state.loading = false;
 
-    state.orders = state.orders.filter(
-        order => order._id !== action.payload
-    );
-})
+                state.orders = state.orders.filter(
+                    order => order._id !== action.payload
+                );
+            })
 
-.addCase(deleteOrder.rejected, (state, action) => {
-    state.loading = false;
-    state.error = action.payload;
-});
+            .addCase(deleteOrder.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload;
+            }).addCase(removeOrderItem.fulfilled, (state, action) => {
+                const updated = action.payload.data || action.payload;
+
+                const index = state.orders.findIndex(
+                    (x) => x._id === updated._id
+                );
+
+                if (index !== -1) {
+                    state.orders[index] = updated;
+                }
+            });
     },
 });
 

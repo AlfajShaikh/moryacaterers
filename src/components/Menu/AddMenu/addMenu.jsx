@@ -55,7 +55,7 @@ export function AddMenu() {
     // --- Search and Filter State ---
     const [searchTerm, setSearchTerm] = useState("");
     const [filterCategory, setFilterCategory] = useState("");
-    const [sortOrder, setSortOrder] = useState(""); 
+    const [sortOrder, setSortOrder] = useState("");
 
     const addMenuItem = () => {
         setFormData({
@@ -113,10 +113,10 @@ export function AddMenu() {
     };
 
     const [categories, setCategories] = useState([
-        "नाश्ता", "स्टार्टर", "सूप", "रायता / सॅलड","आमटी / करी", "मुख्य जेवण",
-        "पंजाबी", "चायनीज", "दक्षिण भारतीय", "महाराष्ट्रीयन","चटणी","व्हेज भाजी",  
-        "भाताचे पदार्थ","पनीर भाजी", "डाळ", "पोळी / भाकरी / नान", "गोड पदार्थ",
-        "डेझर्ट", "आईस्क्रीम", "पेय", "ज्यूस","उसळ","चायनिज स्नॅक्स ","उपवास ",  "मॉकटेल",
+        "नाश्ता", "स्टार्टर", "सूप", "रायता / सॅलड", "आमटी / करी", "मुख्य जेवण",
+        "पंजाबी", "चायनीज", "दक्षिण भारतीय", "महाराष्ट्रीयन", "चटणी", "व्हेज भाजी",
+        "भाताचे पदार्थ", "पनीर भाजी", "डाळ", "पोळी / भाकरी / नान", "गोड पदार्थ",
+        "डेझर्ट", "आईस्क्रीम", "पेय", "ज्यूस", "उसळ", "चायनिज स्नॅक्स ", "उपवास ", "मॉकटेल",
         "स्नॅक्स", "फास्ट फूड", "विशेष मेन्यू",
     ]);
 
@@ -178,7 +178,7 @@ export function AddMenu() {
 
     return (
         <div className="relative min-h-screen bg-slate-50 font-sans text-slate-800 p-4 md:p-8 pb-24 lg:pb-8 overflow-hidden">
-            
+
             {/* Soft Animated Background Orbs */}
             <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
                 <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-indigo-300 rounded-full mix-blend-multiply filter blur-[120px] opacity-40 animate-[pulse_8s_ease-in-out_infinite]"></div>
@@ -204,7 +204,7 @@ export function AddMenu() {
                     </div>
 
                     <form onSubmit={handleSubmit} className="space-y-6">
-                        
+
                         {/* Category Dropdown */}
                         <div className="bg-slate-50/50 p-5 rounded-2xl border border-slate-100">
                             <div className="flex items-center justify-between mb-3">
@@ -255,7 +255,7 @@ export function AddMenu() {
                         <div className="space-y-4">
                             {formData.menuItems?.map((item, index) => (
                                 <div key={index} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-[0_2px_10px_rgba(0,0,0,0.02)] relative animate-in slide-in-from-bottom-4 duration-300">
-                                    
+
                                     <div className="flex justify-between items-center mb-5 pb-3 border-b border-slate-100">
                                         <h2 className="font-black text-slate-800 flex items-center gap-2">
                                             <span className="bg-indigo-100 text-indigo-700 w-6 h-6 rounded-full flex items-center justify-center text-xs">{index + 1}</span>
@@ -274,7 +274,7 @@ export function AddMenu() {
                                             <TagIcon className="w-5 h-5 absolute left-4 top-3.5 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
                                             <input name="itemName" value={item.itemName} onChange={(e) => handleItemChange(index, e)} placeholder="पदार्थाचे नाव (उदा. पनीर मसाला)" required className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-12 pr-4 py-3.5 focus:bg-white focus:ring-4 focus:ring-indigo-100 focus:border-indigo-400 outline-none font-semibold transition-all" />
                                         </div>
-                                        
+
                                         {/* Grid for Price & URL */}
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                             <div className="relative group">
@@ -321,7 +321,7 @@ export function AddMenu() {
                         {/* Add More Button */}
                         {!editing && (
                             <button type="button" onClick={addMenuItem} className="w-full border-2 border-dashed border-indigo-200 text-indigo-600 hover:bg-indigo-50 hover:border-indigo-400 font-bold py-4 rounded-2xl transition-all flex justify-center items-center gap-2 group">
-                                <PlusCircleIcon className="w-6 h-6 group-hover:scale-110 transition-transform" /> 
+                                <PlusCircleIcon className="w-6 h-6 group-hover:scale-110 transition-transform" />
                                 आणखी एक पदार्थ जोडा
                             </button>
                         )}
@@ -447,9 +447,9 @@ export function AddMenu() {
                                                     />
                                                     <div className="absolute top-2 left-2">
                                                         {item.showPrice ? (
-                                                            <span className="bg-emerald-500 text-white text-[10px] font-black px-2 py-0.5 rounded shadow-sm">Visible</span>
+                                                            <span className="bg-emerald-500 text-white text-[10px] font-black px-2 py-0.5 rounded shadow-sm">Price Visible</span>
                                                         ) : (
-                                                            <span className="bg-slate-800/70 backdrop-blur-sm text-white text-[10px] font-black px-2 py-0.5 rounded shadow-sm">Hidden</span>
+                                                            <span className="bg-slate-800/70 backdrop-blur-sm text-white text-[10px] font-black px-2 py-0.5 rounded shadow-sm">Price Hidden</span>
                                                         )}
                                                     </div>
                                                 </div>
@@ -464,7 +464,7 @@ export function AddMenu() {
                                                     </p>
                                                     <div className="mt-auto flex items-center justify-between">
                                                         <p className="text-lg font-black text-emerald-600">₹{item.price}</p>
-                                                        
+
                                                         {/* Action Buttons */}
                                                         <div className="flex gap-2">
                                                             <button

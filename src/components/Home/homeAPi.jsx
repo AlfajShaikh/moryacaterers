@@ -16,3 +16,9 @@ export const calenderApi = async () => {
     const response = await API.get("/dashboard/calendar");
     return response.data;
 };
+
+
+export const getOrderStatusAPI = async () => {
+    const response = await API.get("/dashboard/order-status");
+    return response.data;
+};

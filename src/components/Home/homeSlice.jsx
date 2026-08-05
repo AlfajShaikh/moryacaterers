@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import { calenderApi, getDashboardCountsAPI, markReadApi } from "./homeAPi";
+import { calenderApi, getDashboardCountsAPI, getOrderStatusAPI, markReadApi } from "./homeAPi";
 
 export const getDashboardCounts = createAsyncThunk(
     "dashboard/counts",
@@ -25,6 +25,18 @@ export const getCalendar = createAsyncThunk(
 );
 
 
+export const getOrderStatus = createAsyncThunk(
+    "dashboard/orderStatus",
+    async (_, thunkAPI) => {
+        try {
+            return await getOrderStatusAPI();
+        } catch (err) {
+            return thunkAPI.rejectWithValue(err.response?.data);
+        }
+    }
+);
+
+
 export const markRead = createAsyncThunk(
     "dashboard/markRead",
     async () => {
@@ -38,6 +50,12 @@ const homeSlice = createSlice({
     initialState: {
         counts: {},
         calendar: [],
+         orderStatus: {
+        Pending: 0,
+        Confirmed: 0,
+        Inquiry: 0,
+        Cancel: 0,
+    },
 
         loading: false,
         error: null,
@@ -64,7 +82,9 @@ const homeSlice = createSlice({
                 state.counts.unreadOrderCount = 0;
             }).addCase(getCalendar.fulfilled, (state, action) => {
                 state.calendar = action.payload.data;
-            });
+            }).addCase(getOrderStatus.fulfilled, (state, action) => {
+    state.orderStatus = action.payload.data;
+});
     },
 });
 

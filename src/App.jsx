@@ -9,6 +9,7 @@ import { Orders } from "./components/orders/orders";
 import Login from "./components/login/Login";
 import { SignIn } from "./components/SignIn/signIn";
 import { AddMenu } from "./components/Menu/AddMenu/addMenu";
+import { Invoice } from "./components/Invoice/invoice";
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(
@@ -21,16 +22,18 @@ function App() {
         <Login setIsLoggedIn={setIsLoggedIn} />
       ) : (
         <>
-         <Header setIsLoggedIn={setIsLoggedIn} />
+          <Header setIsLoggedIn={setIsLoggedIn} />
 
-         
+
 
           <Routes>
             <Route path="/" element={<Home />} />
 
             <Route path="/orders" element={<Orders />} />
-              <Route path="/addmenu" element={<AddMenu />} />
-                <Route path="/menu" element={< Menu/>} />
+            <Route path="/addmenu" element={<AddMenu />} />
+            <Route path="/menu" element={< Menu />} />
+             <Route path="/invoice" element={< Invoice />} />
+
 
             {/* Redirect any unknown route */}
             <Route path="*" element={<Navigate to="/" replace />} />

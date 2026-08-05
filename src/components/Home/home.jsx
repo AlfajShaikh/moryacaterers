@@ -12,7 +12,7 @@ import {
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { getDashboardCounts, markRead, getCalendar } from "./homeSlice"; 
+import { getDashboardCounts, markRead, getCalendar, getOrderStatus } from "./homeSlice";
 import { EventCalendarModal } from "../EventCalendarModal/eventCalendarModal";
 
 export function Home() {
@@ -23,7 +23,7 @@ export function Home() {
     const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
     // Get both counts and calendar from Redux
-    const { counts, calendar } = useSelector((state) => state.dashboard);
+    const { counts, calendar, orderStatus } = useSelector((state) => state.dashboard);
 
     const handleOrderClick = async () => {
         await dispatch(markRead());
@@ -130,6 +130,7 @@ export function Home() {
     useEffect(() => {
         dispatch(getDashboardCounts());
         dispatch(getCalendar());
+        dispatch(getOrderStatus());
     }, [dispatch]);
 
     const user = JSON.parse(localStorage.getItem("user"));
@@ -219,7 +220,7 @@ export function Home() {
                 {/* --- NOTIFICATION CENTER --- */}
                 {showNotifications && (
                     <div className="flex flex-col gap-4 w-full animate-in fade-in slide-in-from-top-4 duration-500">
-                        
+
                         {/* 1. Confirmed Events Banner (Emerald) */}
                         {hasConfirmed && (
                             <div className="bg-gradient-to-r from-emerald-500 to-teal-500 rounded-[2rem] p-5 shadow-lg shadow-emerald-500/30 flex flex-col sm:flex-row sm:items-center gap-5 relative overflow-hidden">
@@ -295,7 +296,11 @@ export function Home() {
 
                         {/* 3. Inquiry Events Banner (Blue) */}
                         {hasInquiry && (
+
+
                             <div className="bg-gradient-to-r from-blue-500 to-indigo-500 rounded-[2rem] p-5 shadow-lg shadow-blue-500/30 flex flex-col sm:flex-row sm:items-center gap-5 relative overflow-hidden">
+
+
                                 <div className="absolute top-0 right-0 w-48 h-48 bg-white opacity-10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/3"></div>
 
                                 <div className="p-3.5 bg-white/20 rounded-2xl shrink-0 relative z-10">
@@ -306,6 +311,8 @@ export function Home() {
                                     <h3 className="text-xl font-black tracking-wide mb-2">
                                         चौकशी प्रलंबित (Inquiry)
                                     </h3>
+
+
                                     <div className="flex flex-col gap-2 text-sm md:text-base font-semibold text-white/90">
                                         {todayInquiry.length > 0 && (
                                             <p className="bg-white/20 px-3 py-2 rounded-xl inline-block w-fit border border-white/40">
@@ -329,6 +336,46 @@ export function Home() {
 
                     </div>
                 )}
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-5">
+                        <p className="text-sm text-yellow-700 font-semibold">
+                            Pending Orders
+                        </p>
+                        <h2 className="text-3xl font-bold text-yellow-600">
+                            {orderStatus.Pending}
+                        </h2>
+                    </div>
+
+                    <div className="bg-green-50 border border-green-200 rounded-xl p-5">
+                        <p className="text-sm text-green-700 font-semibold">
+                            Confirmed Orders
+                        </p>
+                        <h2 className="text-3xl font-bold text-green-600">
+                            {orderStatus.Confirmed}
+                        </h2>
+                    </div>
+
+                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-5">
+                        <p className="text-sm text-blue-700 font-semibold">
+                            Inquiry Orders
+                        </p>
+                        <h2 className="text-3xl font-bold text-blue-600">
+                            {orderStatus.Inquiry}
+                        </h2>
+                    </div>
+
+                    <div className="bg-red-50 border border-red-200 rounded-xl p-5">
+                        <p className="text-sm text-red-700 font-semibold">
+                            Cancelled Orders
+                        </p>
+                        <h2 className="text-3xl font-bold text-red-600">
+                            {orderStatus.Cancel}
+                        </h2>
+                    </div>
+
+                </div>
 
 
                 {/* Quick Actions List */}

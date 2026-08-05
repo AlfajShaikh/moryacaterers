@@ -5,6 +5,7 @@ import menuReducer from "./components/Menu/AddMenu/addMenuSlice"
 import menuListReducer from './components/Menu/menuSlice'
 import ordersReducer from './components/orders/ordersSlice'
 import homeReducer from './components/Home/homeSlice'
+import invoiceReducer from './components/Invoice/invoiceSlice'
 export const store = configureStore({   
     reducer: {
         signin: signinReducer,
@@ -12,6 +13,7 @@ export const store = configureStore({
         menu: menuReducer,
         menuList:menuListReducer,
         orders:ordersReducer,
-        dashboard:homeReducer
+        dashboard:homeReducer,
+        invoice:invoiceReducer
     },
 });
