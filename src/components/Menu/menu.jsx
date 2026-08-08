@@ -32,7 +32,12 @@ export function Menu() {
     // NEW STATE: Tracks which shifts are already booked for the selected date
     const [bookedShifts, setBookedShifts] = useState([]);
 
+    
+
     const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+
+
+    
 
     const [customer, setCustomer] = useState({
         name: "",
@@ -92,6 +97,8 @@ export function Menu() {
     const [activeShift, setActiveShift] = useState("सकाळ");
 
     const [isCartOpen, setIsCartOpen] = useState(false);
+
+    
 
     useEffect(() => {
         dispatch(getAllMenus());
@@ -247,8 +254,10 @@ export function Menu() {
                     </p>
                 </div>
 
+
                 {/* Customer Details Form */}
                 {!showMenu && (
+                    
                     <div className="mt-4 mb-5 bg-white/80 backdrop-blur-xl border border-white rounded-3xl p-6 md:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] max-w-3xl">
 
                         <div className="mb-8">
@@ -402,7 +411,7 @@ export function Menu() {
                         </button>
                     </div>
                 )}
-
+<p className="text-center text-gray-400">@ 2026 Developed by Deenova Digital</p>
 
                 {/* Menu Selection Section */}
                 {showMenu && (

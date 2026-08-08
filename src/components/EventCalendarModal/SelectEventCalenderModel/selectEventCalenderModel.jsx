@@ -4,8 +4,6 @@ import {
     XMarkIcon,
     ChevronLeftIcon,
     ChevronRightIcon,
-    TagIcon,
-    ClockIcon,
 } from "@heroicons/react/24/outline";
 import { useDispatch, useSelector } from "react-redux";
 import { getCalendar } from "../../Home/homeSlice"; // Adjust path if necessary
@@ -29,18 +27,17 @@ export function SelectEventCalenderModel({
     };
 
     const [currentDate, setCurrentDate] = useState(new Date());
-    const [selectedEvent, setSelectedEvent] = useState(null);
 
     // Get today's date and strip time for accurate past-date comparison
     const todayDate = new Date();
     todayDate.setHours(0, 0, 0, 0);
 
     const ALL_SHIFTS = ["सकाळ", "संध्याकाळ", "रात्र"];
+    const MAX_BOOKINGS_PER_SHIFT = 3; // प्रत्येक शिफ्टसाठी कमाल मर्यादा
 
     useEffect(() => {
         if (isOpen) {
             dispatch(getCalendar());
-            setSelectedEvent(null);
         }
     }, [dispatch, isOpen]);
 
@@ -55,186 +52,110 @@ export function SelectEventCalenderModel({
 
     const prevMonth = () => {
         setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
-        setSelectedEvent(null);
     };
     const nextMonth = () => {
         setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
-        setSelectedEvent(null);
     };
 
-    // --- Helper: Status Colors for the WHOLE CARD ---
-    const getStatusStyles = (status) => {
-        switch (status) {
-            case "Confirmed":
-                return { bg: "bg-emerald-50", border: "border-emerald-300", text: "text-emerald-800", dot: "bg-emerald-500" };
-            case "Inquiry":
-                return { bg: "bg-blue-50", border: "border-blue-300", text: "text-blue-800", dot: "bg-blue-500" };
-            case "Cancel":
-            case "Cancelled":
-                return { bg: "bg-rose-50", border: "border-rose-300", text: "text-rose-800", dot: "bg-rose-500" };
-            case "Pending":
-            default:
-                return { bg: "bg-amber-50", border: "border-amber-300", text: "text-amber-800", dot: "bg-amber-500" };
-        }
-    };
-
-    // --- Helper: Dynamic Animated Gradient for MIXED cards ---
-    const getMixedGradientClasses = (statuses) => {
-        const hasConfirmed = statuses.includes("Confirmed");
-        const hasPending = statuses.includes("Pending");
-        const hasInquiry = statuses.includes("Inquiry");
-
-        let classes = [];
-
-        if (hasConfirmed) classes.push("from-emerald-300");
-        else if (hasPending) classes.push("from-amber-300");
-        else if (hasInquiry) classes.push("from-blue-300");
-        else classes.push("from-slate-300");
-
-        if (hasConfirmed && hasPending && hasInquiry) {
-            classes.push("via-amber-300");
-        } else if (hasPending && hasInquiry) {
-            classes.push("via-blue-300");
+    // --- Helper: Render beautiful shift badges ---
+    const renderShiftBadge = (shift, remaining) => {
+        const isFull = remaining <= 0;
+        
+        let themeClasses = "";
+        let icon = "";
+        
+        if (isFull) {
+            themeClasses = "bg-rose-50 text-rose-600 border-rose-100 shadow-[inset_0_0_8px_rgba(225,29,72,0.05)] opacity-80";
+            icon = "🔒";
+        } else if (shift === "सकाळ") {
+            themeClasses = "bg-amber-50/80 text-amber-700 border-amber-200/60 group-hover:bg-amber-100 group-hover:border-amber-300";
+            icon = "🌅";
+        } else if (shift === "संध्याकाळ") {
+            themeClasses = "bg-orange-50/80 text-orange-700 border-orange-200/60 group-hover:bg-orange-100 group-hover:border-orange-300";
+            icon = "🌇";
+        } else {
+            themeClasses = "bg-indigo-50/80 text-indigo-700 border-indigo-200/60 group-hover:bg-indigo-100 group-hover:border-indigo-300";
+            icon = "🌙";
         }
 
-        if (hasInquiry && !classes.includes("from-blue-300") && !classes.includes("via-blue-300")) classes.push("to-blue-300");
-        else if (hasPending && !classes.includes("from-amber-300")) classes.push("to-amber-300");
-        else classes.push("to-indigo-300");
-
-        return classes.join(" ");
+        return (
+            <div key={shift} className={`flex items-center justify-between w-full px-1.5 md:px-2 py-0.5 md:py-1 rounded-lg border text-[9px] md:text-[10px] font-bold transition-all duration-300 ${themeClasses}`}>
+                <span className="flex items-center gap-1 md:gap-1.5">
+                    <span className="text-[10px] md:text-xs drop-shadow-sm">{icon}</span>
+                    <span className="tracking-wide">{shift}</span>
+                </span>
+                <span className={isFull ? "font-black text-rose-600" : "font-extrabold"}>
+                    {isFull ? "फुल्ल" : `${remaining} बाकी`}
+                </span>
+            </div>
+        );
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md transition-opacity">
-            <div className="bg-white rounded-[2rem] w-full max-w-4xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 relative flex flex-col max-h-[95vh]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-6 bg-slate-900/70 backdrop-blur-sm transition-opacity">
+            <div className="bg-slate-50 rounded-[2rem] w-full max-w-5xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 relative flex flex-col max-h-[95vh] md:max-h-[90vh]">
 
-                {/* Modal Header */}
-                <div className="bg-slate-50 border-b border-slate-100 p-5 flex items-center justify-between flex-shrink-0 z-20 relative">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2.5 bg-indigo-100 text-indigo-600 rounded-xl shadow-sm border border-indigo-200/50">
+                {/* Premium Modal Header */}
+                <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border-b border-slate-700 p-5 flex items-center justify-between flex-shrink-0 z-20 relative">
+                    <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay"></div>
+                    <div className="flex items-center gap-4 relative z-10">
+                        <div className="p-3 bg-white/10 text-white rounded-xl shadow-lg backdrop-blur-md border border-white/20">
                             <CalendarDaysIcon className="w-6 h-6" />
                         </div>
                         <div>
-                            <h2 className="text-xl font-black text-slate-800">तारीख निवडा</h2>
-                            <p className="text-sm font-semibold text-slate-500 tracking-wide">Select Event Date</p>
+                            <h2 className="text-xl md:text-2xl font-black text-white tracking-tight">तारीख निवडा</h2>
+                            <p className="text-sm font-medium text-slate-400 tracking-wide mt-0.5">उपलब्ध तारखा आणि शिफ्ट्स (Available Slots)</p>
                         </div>
                     </div>
-                    <button
-                        onClick={onClose}
-                        className="p-2.5 rounded-full bg-white border border-slate-200 text-slate-500 hover:bg-slate-100 hover:text-rose-600 transition-all shadow-sm"
+                    <button 
+                        onClick={onClose} 
+                        className="relative z-10 p-2.5 rounded-full bg-white/10 border border-white/10 text-slate-300 hover:bg-rose-500 hover:text-white hover:border-rose-500 transition-all shadow-sm active:scale-95"
                     >
-                        <XMarkIcon className="w-5 h-5" />
+                        <XMarkIcon className="w-5 h-5 md:w-6 md:h-6" />
                     </button>
                 </div>
 
                 {/* Calendar Body Area */}
-                <div className="relative flex-1 overflow-y-auto p-5 md:p-8 bg-white z-0">
-
-                    {/* Event Details Overlay (Shows when an event is clicked) */}
-                    {selectedEvent && (
-                        <div className="absolute inset-0 z-30 flex items-center justify-center p-4 bg-white/70 backdrop-blur-md rounded-b-[2rem] animate-in fade-in duration-300">
-                            <div className="bg-white border border-slate-200 shadow-2xl rounded-[1.5rem] p-6 w-full max-w-sm relative animate-in zoom-in-95 duration-300">
-
-                                <button
-                                    onClick={() => setSelectedEvent(null)}
-                                    className="absolute top-4 right-4 p-1.5 rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
-                                >
-                                    <XMarkIcon className="w-5 h-5" />
-                                </button>
-
-                                <div className="mb-6">
-                                    <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-bold mb-4
-                                        ${getStatusStyles(selectedEvent.extendedProps?.status).bg} 
-                                        ${getStatusStyles(selectedEvent.extendedProps?.status).border} 
-                                        ${getStatusStyles(selectedEvent.extendedProps?.status).text}`}
-                                    >
-                                        <span className={`w-1.5 h-1.5 rounded-full ${getStatusStyles(selectedEvent.extendedProps?.status).dot}`}></span>
-                                        {selectedEvent.extendedProps?.status} Order
-                                    </div>
-                                    <h3 className="text-2xl font-black text-slate-900 leading-tight">
-                                        {selectedEvent.extendedProps?.customerName}
-                                    </h3>
-                                </div>
-
-                                <div className="space-y-4">
-                                    <div className="flex items-center gap-3 text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-100">
-                                        <TagIcon className="w-5 h-5 text-indigo-500" />
-                                        <div>
-                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">कार्यक्रम (Event)</p>
-                                            <p className="font-bold text-slate-800">{selectedEvent.extendedProps?.eventType}</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-center gap-3 text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-100">
-                                        <CalendarDaysIcon className="w-5 h-5 text-blue-500" />
-                                        <div>
-                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">तारीख (Date)</p>
-                                            <p className="font-bold text-slate-800">
-                                                {new Date(selectedEvent.start).toLocaleDateString("en-IN", { day: '2-digit', month: 'long', year: 'numeric' })}
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-start gap-3 text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-100">
-                                        <ClockIcon className="w-5 h-5 text-amber-500 mt-0.5" />
-                                        <div>
-                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">शिफ्ट्स (Shifts)</p>
-                                            <div className="flex flex-wrap gap-1.5">
-                                                {selectedEvent.extendedProps?.shifts?.map((shift, idx) => (
-                                                    <span key={idx} className="bg-white border border-slate-200 text-slate-700 text-xs font-bold px-2 py-1 rounded-md shadow-sm">
-                                                        {shift}
-                                                    </span>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <button
-                                    onClick={() => setSelectedEvent(null)}
-                                    className="mt-6 w-full py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl transition-colors"
-                                >
-                                    Close Details
-                                </button>
-                            </div>
-                        </div>
-                    )}
+                <div className="relative flex-1 overflow-y-auto p-4 md:p-8 bg-slate-50 z-0 scrollbar-thin scrollbar-thumb-slate-300">
 
                     {/* Calendar Controls */}
-                    <div className="flex items-center justify-between mb-6 z-10 relative">
-                        <h3 className="text-2xl md:text-3xl font-black text-slate-800 tracking-tight">
-                            {monthNames[currentDate.getMonth()]} <span className="text-indigo-600">{currentDate.getFullYear()}</span>
+                    <div className="flex items-center justify-between mb-6 md:mb-8 bg-white p-3 md:p-4 rounded-2xl shadow-sm border border-slate-100">
+                        <h3 className="text-2xl md:text-3xl font-black text-slate-800 tracking-tight flex items-center gap-2">
+                            {monthNames[currentDate.getMonth()]} 
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">
+                                {currentDate.getFullYear()}
+                            </span>
                         </h3>
-                        <div className="flex items-center gap-2">
-                            <button onClick={prevMonth} className="p-2 border-2 border-slate-200 rounded-xl hover:bg-slate-50 hover:border-indigo-300 transition-colors active:scale-95">
-                                <ChevronLeftIcon className="w-5 h-5 text-slate-600" />
+                        <div className="flex items-center gap-2 md:gap-3">
+                            <button onClick={prevMonth} className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl hover:bg-blue-50 hover:border-blue-200 hover:text-blue-600 transition-colors active:scale-95 shadow-sm">
+                                <ChevronLeftIcon className="w-5 h-5 text-slate-600 group-hover:text-blue-600" />
                             </button>
-                            <button onClick={nextMonth} className="p-2 border-2 border-slate-200 rounded-xl hover:bg-slate-50 hover:border-indigo-300 transition-colors active:scale-95">
-                                <ChevronRightIcon className="w-5 h-5 text-slate-600" />
+                            <button onClick={nextMonth} className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl hover:bg-blue-50 hover:border-blue-200 hover:text-blue-600 transition-colors active:scale-95 shadow-sm">
+                                <ChevronRightIcon className="w-5 h-5 text-slate-600 group-hover:text-blue-600" />
                             </button>
                         </div>
                     </div>
 
                     {/* Calendar Grid */}
-                    <div className="grid grid-cols-7 gap-1.5 md:gap-3 z-10 relative">
+                    <div className="grid grid-cols-7 gap-2 md:gap-3 z-10 relative">
                         {/* Weekday Headers */}
                         {daysOfWeek.map((day, idx) => (
-                            <div key={idx} className="text-center text-xs font-black text-slate-400 uppercase tracking-wider pb-2 border-b-2 border-slate-100">
+                            <div key={idx} className="text-center text-xs md:text-sm font-black text-slate-400 uppercase tracking-widest pb-3">
                                 {day}
                             </div>
                         ))}
 
-                        {/* Empty Slots for first day offset */}
+                        {/* Empty Initial Slots */}
                         {Array.from({ length: firstDayOfMonth }).map((_, idx) => (
-                            <div key={`empty-${idx}`} className="h-24 md:h-32 rounded-2xl bg-slate-50/50 border border-transparent"></div>
+                            <div key={`empty-${idx}`} className="min-h-[120px] md:min-h-[140px] rounded-2xl bg-slate-100/50 border border-transparent"></div>
                         ))}
 
-                        {/* Days of the month */}
+                        {/* Days Logic */}
                         {Array.from({ length: daysInMonth }).map((_, idx) => {
                             const date = idx + 1;
                             const currentDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), date);
 
-                            // RULE 1: Filter events for this specific day AND IGNORE CANCELLED EVENTS!
+                            // Get events for the current day
                             const dayEvents = calendar?.filter((item) => {
                                 const eventDate = new Date(item.start);
                                 const status = item.extendedProps?.status;
@@ -248,133 +169,112 @@ export function SelectEventCalenderModel({
                                 );
                             }) || [];
 
-                            const hasEvent = dayEvents.length > 0;
                             const isToday = new Date().toDateString() === currentDay.toDateString();
 
-                            // RULE 2: ONLY 'Confirmed' Events block the shifts.
-                            const confirmedShifts = new Set();
+                            // Calculate shifts
+                            const shiftCounts = { "सकाळ": 0, "संध्याकाळ": 0, "रात्र": 0 };
+                            
                             dayEvents.forEach((event) => {
                                 if (event.extendedProps?.status === "Confirmed" && Array.isArray(event.extendedProps?.shifts)) {
-                                    event.extendedProps.shifts.forEach((shift) => confirmedShifts.add(shift));
+                                    event.extendedProps.shifts.forEach((shift) => {
+                                        if (shiftCounts[shift] !== undefined) {
+                                            shiftCounts[shift] += 1;
+                                        }
+                                    });
                                 }
                             });
 
-                            const isFullyBooked = confirmedShifts.size === ALL_SHIFTS.length;
-                            const availableShifts = ALL_SHIFTS.filter((shift) => !confirmedShifts.has(shift));
+                            const fullyBookedShifts = ALL_SHIFTS.filter((shift) => shiftCounts[shift] >= MAX_BOOKINGS_PER_SHIFT);
+                            const isFullyBooked = fullyBookedShifts.length === ALL_SHIFTS.length;
 
-                            // Check conditions for selection rule
                             const isPastDate = currentDay < todayDate;
-                            const isSelectable = !isPastDate && !isFullyBooked; // It is selectable if not past and not fully booked
+                            const isSelectable = !isPastDate && !isFullyBooked; 
 
-                            // Find unique statuses for the Mixed Color logic
-                            const uniqueStatuses = Array.from(new Set(dayEvents.map(e => e.extendedProps?.status)));
-                            const isMixed = uniqueStatuses.length > 1;
-
-                            // Determine whole card style
+                            // Styling setup
                             let cardBgClass = 'bg-white';
-                            let cardBorderClass = 'border-slate-200';
-                            let dateTextClass = 'text-slate-500';
+                            let cardBorderClass = 'border-slate-200/60 shadow-sm';
+                            let dateTextClass = 'text-slate-700';
+                            let indicatorClass = 'hidden'; // For 'Today' indicator
 
-                            if (hasEvent) {
-                                if (!isMixed) {
-                                    const primaryStyle = getStatusStyles(uniqueStatuses[0]);
-                                    cardBgClass = primaryStyle.bg;
-                                    cardBorderClass = primaryStyle.border;
-                                    dateTextClass = primaryStyle.text;
-                                } else {
-                                    cardBgClass = 'bg-white';
-                                    cardBorderClass = 'border-indigo-300 shadow-md shadow-indigo-100/50';
-                                    dateTextClass = 'text-indigo-900';
-                                }
-                            } else if (isPastDate) {
-                                cardBgClass = 'bg-slate-50';
-                                cardBorderClass = 'border-slate-100';
-                                dateTextClass = 'text-slate-300';
+                            if (isPastDate) {
+                                cardBgClass = 'bg-slate-100/60';
+                                cardBorderClass = 'border-transparent';
+                                dateTextClass = 'text-slate-400';
+                            } else if (isFullyBooked) {
+                                cardBgClass = 'bg-rose-50/40';
+                                cardBorderClass = 'border-rose-100';
+                                dateTextClass = 'text-rose-800 opacity-60';
                             } else if (isToday) {
-                                cardBgClass = 'bg-indigo-50 shadow-[inset_0_0_0_2px_rgba(99,102,241,0.2)]';
-                                cardBorderClass = 'border-indigo-200';
-                                dateTextClass = 'text-indigo-700';
+                                cardBgClass = 'bg-blue-50/50';
+                                cardBorderClass = 'border-blue-400 shadow-md shadow-blue-100';
+                                dateTextClass = 'text-blue-800';
+                                indicatorClass = 'block';
                             }
 
                             return (
                                 <div
                                     key={date}
                                     onClick={() => {
-                                        // RULE 3: Select Date logic
-                                        // If the date is valid (not past & not fully booked by confirmed events), select it and CLOSE modal immediately.
                                         if (isSelectable) {
-                                            handleDateSelect(currentDay, Array.from(confirmedShifts));
-                                            onClose(); // Automatically close the calendar upon selection!
+                                            handleDateSelect(currentDay, fullyBookedShifts);
+                                            onClose(); 
                                         }
                                     }}
-                                    className={`relative flex flex-col h-24 md:h-32 p-1.5 md:p-2 rounded-2xl border transition-all duration-300 overflow-hidden
+                                    className={`group relative flex flex-col min-h-[120px] md:min-h-[145px] p-2 md:p-3 rounded-2xl border transition-all duration-300 overflow-hidden
                                         ${cardBgClass} ${cardBorderClass}
-                                        ${!isSelectable && !hasEvent ? 'cursor-not-allowed opacity-60' : ''}
-                                        ${isSelectable ? 'cursor-pointer hover:border-indigo-400 hover:shadow-md hover:scale-[1.02] hover:z-10' : ''}
+                                        ${!isSelectable ? 'cursor-not-allowed grayscale-[20%]' : ''}
+                                        ${isSelectable ? 'cursor-pointer hover:border-indigo-400 hover:shadow-xl hover:shadow-indigo-100 hover:-translate-y-1 hover:z-10 bg-white' : ''}
                                     `}
                                 >
-                                    {/* DYNAMIC MIXED ANIMATED GRADIENT */}
-                                    {isMixed && (
-                                        <div className={`absolute inset-0 bg-gradient-to-br ${getMixedGradientClasses(uniqueStatuses)} opacity-30 animate-pulse pointer-events-none -z-0`}></div>
+                                    {/* Today Indicator */}
+                                    <div className={`absolute top-0 right-0 w-8 h-8 overflow-hidden rounded-tr-2xl ${indicatorClass}`}>
+                                        <div className="absolute top-0 right-0 bg-blue-500 w-full h-full transform translate-x-1/2 -translate-y-1/2 rotate-45"></div>
+                                    </div>
+
+                                    {/* Date Header */}
+                                    <div className="flex justify-between items-start mb-2 relative z-10">
+                                        <span className={`text-sm md:text-lg font-black shrink-0 ${dateTextClass} ${isSelectable ? 'group-hover:text-indigo-700' : ''}`}>
+                                            {date}
+                                        </span>
+                                        {isToday && <span className="text-[9px] font-black uppercase tracking-wider text-blue-600 bg-blue-100 px-1.5 py-0.5 rounded mr-1">आज</span>}
+                                    </div>
+
+                                    {/* Remaining Slots */}
+                                    {!isPastDate && (
+                                        <div className="relative z-10 flex flex-col gap-1.5 mt-auto w-full">
+                                            {ALL_SHIFTS.map((shift) => {
+                                                const remaining = MAX_BOOKINGS_PER_SHIFT - (shiftCounts[shift] || 0);
+                                                return renderShiftBadge(shift, remaining);
+                                            })}
+                                        </div>
                                     )}
 
-                                    <span className={`relative z-10 text-xs md:text-sm font-black mb-1 shrink-0 ${dateTextClass}`}>
-                                        {date}
-                                    </span>
-
-                                    {/* Event User Names inside the card */}
-                                    <div className="relative z-10 flex flex-col gap-1 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 flex-1 pb-1">
-                                        {dayEvents.map((event, eventIdx) => {
-                                            const statusStyle = getStatusStyles(event.extendedProps?.status);
-                                            return (
-                                                <div
-                                                    key={event.id || eventIdx}
-                                                    onClick={(e) => {
-                                                        // Stop Propagation: This ensures clicking the event name just opens details and DOES NOT select the date
-                                                        e.stopPropagation();
-                                                        setSelectedEvent(event);
-                                                    }}
-                                                    className={`flex items-center gap-1.5 text-[9px] md:text-[11px] font-bold truncate px-1.5 py-1 rounded-md border bg-white/90 backdrop-blur-sm shadow-sm cursor-pointer hover:opacity-80 hover:scale-[1.02] transition-all active:scale-95 shrink-0 ${statusStyle.text} ${statusStyle.border}`}
-                                                    title={event.extendedProps?.customerName}
-                                                >
-                                                    <span className={`w-1.5 h-1.5 rounded-full ${statusStyle.dot} flex-shrink-0`}></span>
-                                                    <span className="truncate">{event.extendedProps?.customerName}</span>
-                                                </div>
-                                            );
-                                        })}
-
-                                        {/* --- SHIFTS AVAILABILITY BADGES --- */}
-                                        {!isPastDate && confirmedShifts.size > 0 && !isFullyBooked && (
-                                            <div className="mt-auto pt-1 shrink-0 pointer-events-none">
-                                                <span className="bg-emerald-100/90 backdrop-blur-sm text-emerald-800 border border-emerald-300 text-[8px] md:text-[10px] font-extrabold px-1.5 py-0.5 rounded shadow-sm w-full block truncate text-center">
-                                                    उपलब्ध: {availableShifts.join(', ')}
-                                                </span>
-                                            </div>
-                                        )}
-
-                                        {!isPastDate && isFullyBooked && (
-                                            <div className="mt-auto pt-1 shrink-0 pointer-events-none">
-                                                <span className="bg-rose-100/90 backdrop-blur-sm text-rose-800 border border-rose-300 text-[8px] md:text-[10px] font-extrabold px-1.5 py-0.5 rounded shadow-sm w-full block truncate text-center">
-                                                    संपूर्ण बुक
-                                                </span>
-                                            </div>
-                                        )}
-                                    </div>
+                                    {/* Past Date Message */}
+                                    {isPastDate && (
+                                        <div className="mt-auto flex items-center justify-center h-full opacity-40">
+                                            <span className="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-widest rotate-[-15deg]">
+                                                मागील तारीख
+                                            </span>
+                                        </div>
+                                    )}
                                 </div>
                             );
                         })}
                     </div>
-
-                    {/* Legend */}
-                    <div className="mt-6 pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-4 text-[10px] md:text-xs font-bold text-slate-500">
-                        <div className="text-rose-500 flex items-center gap-1.5">
-                            * मागील तारखा आणि संपूर्ण बुक (Full Booked) झालेल्या तारखा निवडता येणार नाहीत.
+                    
+                    {/* Helper Legend */}
+                    <div className="mt-8 flex flex-wrap items-center justify-center gap-4 md:gap-8 pt-6 border-t border-slate-200">
+                        <div className="flex items-center gap-2 text-xs md:text-sm font-bold text-slate-500">
+                            <span className="w-3 h-3 rounded-full bg-rose-100 border border-rose-300 shadow-sm flex items-center justify-center text-[8px]">🔒</span>
+                            संपूर्ण बुक
                         </div>
-                        <div className="flex flex-wrap items-center gap-4">
-                            <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-md bg-emerald-50 border border-emerald-300"></span> Confirmed</div>
-                            <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-md bg-amber-50 border border-amber-300"></span> Pending</div>
-                            <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-md bg-blue-50 border border-blue-300"></span> Inquiry</div>
-                            <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-md bg-indigo-50 border border-indigo-300"></span> Mixed / Animated</div>
+                        <div className="flex items-center gap-2 text-xs md:text-sm font-bold text-slate-500">
+                            <span className="w-3 h-3 rounded-full bg-blue-400 shadow-sm"></span>
+                            आजची तारीख
+                        </div>
+                        <div className="flex items-center gap-2 text-xs md:text-sm font-bold text-slate-500">
+                            <span className="w-3 h-3 rounded-full bg-slate-200 shadow-sm"></span>
+                            मागील तारखा (निवडता येणार नाहीत)
                         </div>
                     </div>
 

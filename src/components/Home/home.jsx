@@ -456,6 +456,9 @@ export function Home() {
                         </div>
                     </div>
                 )}
+
+               <p className="text-center text-gray-400">@ 2026 Developed by Deenova Digital</p>
+
             </div>
 
             {/* Imported Calendar Component */}

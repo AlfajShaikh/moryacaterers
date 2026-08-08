@@ -29,6 +29,7 @@ export const saveCustomerMenu = createAsyncThunk(
 
 const initialState = {
     menus: [],
+       dateWiseCount: [],
     loading: false,
     saving: false,
     success: false,
@@ -46,10 +47,11 @@ const menuSlice = createSlice({
                 state.loading = true;
             })
 
-            .addCase(getAllMenus.fulfilled, (state, action) => {
-                state.loading = false;
-                state.menus = action.payload.data;
-            })
+          .addCase(getAllMenus.fulfilled, (state, action) => {
+    state.loading = false;
+    state.menus = action.payload.data;
+    state.dateWiseCount = action.payload.dateWiseCount || [];
+})
 
             .addCase(getAllMenus.rejected, (state, action) => {
                 state.loading = false;

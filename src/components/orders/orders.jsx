@@ -17,7 +17,8 @@ import {
     ArrowsUpDownIcon,
     TrashIcon,
     CheckCircleIcon,
-    XCircleIcon
+    XCircleIcon,
+    PlusCircleIcon
 } from "@heroicons/react/24/outline";
 import { ShoppingBagIcon, CurrencyRupeeIcon, CheckCircleIcon as CheckCircleSolid } from "@heroicons/react/24/solid";
 import { EstimationModal } from "./EstimationModal/estimationModal";
@@ -30,9 +31,15 @@ export function Orders() {
     const [expandedOrders, setExpandedOrders] = useState({});
     const [localOrders, setLocalOrders] = useState([]);
     const [estimationOrder, setEstimationOrder] = useState(null);
+    
+    // Add Item States
     const [showAddItem, setShowAddItem] = useState({});
     const [newItemName, setNewItemName] = useState({});
     const [newItemPrice, setNewItemPrice] = useState({});
+
+    // Add Category States
+    const [showAddCategory, setShowAddCategory] = useState({});
+    const [newCategoryName, setNewCategoryName] = useState({});
 
     // Search & Filter States
     const [searchTerm, setSearchTerm] = useState("");
@@ -52,7 +59,25 @@ export function Orders() {
         }
     }, [orders]);
 
-    // Handlers
+    // --- Calculations ---
+    const calculatePerPlatePrice = (order) => {
+        let total = 0;
+        order.shifts?.forEach((shift) => {
+            shift.categories?.forEach((category) => {
+                // जर कॅटेगरीची प्राईस मॅन्युअली सेट केली असेल तर ती वापरा, नाहीतर आतील आयटम्सची बेरीज करा
+                if (category.categoryPrice !== undefined && category.categoryPrice !== "") {
+                    total += Number(category.categoryPrice);
+                } else {
+                    category.selectedItems?.forEach((item) => {
+                        total += Number(item.price || 0);
+                    });
+                }
+            });
+        });
+        return total;
+    };
+
+    // --- Handlers ---
     const handleFieldChange = (orderId, field, value) => {
         setLocalOrders((prevOrders) =>
             prevOrders.map((order) => {
@@ -62,6 +87,71 @@ export function Orders() {
                     const perPlatePrice = calculatePerPlatePrice(updatedOrder);
                     updatedOrder.grandTotal = Number(value || 0) * perPlatePrice;
                 }
+                return updatedOrder;
+            })
+        );
+    };
+
+    // नवीन: कॅटेगरीची एकूण रक्कम (Category Price) बदलण्यासाठी
+    const handleCategoryPriceChange = (orderId, shiftIndex, categoryIndex, newPrice) => {
+        setLocalOrders((prevOrders) =>
+            prevOrders.map((order) => {
+                if (order._id !== orderId) return order;
+                const updatedOrder = JSON.parse(JSON.stringify(order));
+                
+                updatedOrder.shifts[shiftIndex].categories[categoryIndex].categoryPrice = newPrice;
+                
+                const perPlatePrice = calculatePerPlatePrice(updatedOrder);
+                updatedOrder.grandTotal = Number(updatedOrder.guestCount || 0) * perPlatePrice;
+                
+                return updatedOrder;
+            })
+        );
+    };
+
+    const handleAddCategory = (orderId, shiftIndex) => {
+        const name = newCategoryName[`${orderId}-${shiftIndex}`]?.trim();
+
+        if (!name) {
+            alert("कृपया कॅटेगरीचे नाव लिहा! (Please enter category name)");
+            return;
+        }
+
+        setLocalOrders((prevOrders) =>
+            prevOrders.map((order) => {
+                if (order._id !== orderId) return order;
+                const updatedOrder = JSON.parse(JSON.stringify(order));
+                
+                if (!updatedOrder.shifts[shiftIndex].categories) {
+                    updatedOrder.shifts[shiftIndex].categories = [];
+                }
+                
+                updatedOrder.shifts[shiftIndex].categories.push({
+                    category: name,
+                    selectedItems: [],
+                    categoryPrice: 0
+                });
+                return updatedOrder;
+            })
+        );
+
+        setNewCategoryName((prev) => ({ ...prev, [`${orderId}-${shiftIndex}`]: "" }));
+        setShowAddCategory((prev) => ({ ...prev, [`${orderId}-${shiftIndex}`]: false }));
+    };
+
+    const handleRemoveCategory = (orderId, shiftIndex, categoryIndex) => {
+        if (!window.confirm("तुम्हाला नक्की ही संपूर्ण कॅटेगरी आणि त्यातील पदार्थ डिलीट करायचे आहेत का?")) return;
+        
+        setLocalOrders((prevOrders) =>
+            prevOrders.map((order) => {
+                if (order._id !== orderId) return order;
+                const updatedOrder = JSON.parse(JSON.stringify(order));
+                
+                updatedOrder.shifts[shiftIndex].categories.splice(categoryIndex, 1);
+                
+                const perPlatePrice = calculatePerPlatePrice(updatedOrder);
+                updatedOrder.grandTotal = Number(updatedOrder.guestCount || 0) * perPlatePrice;
+                
                 return updatedOrder;
             })
         );
@@ -81,6 +171,11 @@ export function Orders() {
                 if (order._id !== orderId) return order;
                 const updatedOrder = JSON.parse(JSON.stringify(order));
                 updatedOrder.shifts[shiftIndex].categories[categoryIndex].selectedItems.push({ itemName: name, price });
+                
+                // आयटम ऍड केल्यावर कॅटेगरीची एकूण रक्कम पुन्हा मोजा
+                const newCatSum = updatedOrder.shifts[shiftIndex].categories[categoryIndex].selectedItems.reduce((sum, item) => sum + Number(item.price || 0), 0);
+                updatedOrder.shifts[shiftIndex].categories[categoryIndex].categoryPrice = newCatSum;
+
                 const perPlatePrice = calculatePerPlatePrice(updatedOrder);
                 updatedOrder.grandTotal = Number(updatedOrder.guestCount || 0) * perPlatePrice;
                 return updatedOrder;
@@ -89,6 +184,24 @@ export function Orders() {
 
         setNewItemName((prev) => ({ ...prev, [`${orderId}-${shiftIndex}-${categoryIndex}`]: "" }));
         setNewItemPrice((prev) => ({ ...prev, [`${orderId}-${shiftIndex}-${categoryIndex}`]: "" }));
+    };
+
+    const handleItemPriceChange = (orderId, shiftIndex, categoryIndex, itemIndex, newPrice) => {
+        setLocalOrders((prevOrders) =>
+            prevOrders.map((order) => {
+                if (order._id !== orderId) return order;
+                const updatedOrder = JSON.parse(JSON.stringify(order));
+                updatedOrder.shifts[shiftIndex].categories[categoryIndex].selectedItems[itemIndex].price = newPrice;
+                
+                // जेव्हा आतील पदार्थाची किंमत बदलते, तेव्हा कॅटेगरीची किंमत आपोआप अपडेट करा
+                const newCatSum = updatedOrder.shifts[shiftIndex].categories[categoryIndex].selectedItems.reduce((sum, item) => sum + Number(item.price || 0), 0);
+                updatedOrder.shifts[shiftIndex].categories[categoryIndex].categoryPrice = newCatSum;
+
+                const perPlatePrice = calculatePerPlatePrice(updatedOrder);
+                updatedOrder.grandTotal = Number(updatedOrder.guestCount || 0) * perPlatePrice;
+                return updatedOrder;
+            })
+        );
     };
 
     const handleDeleteOrder = async (id) => {
@@ -105,31 +218,6 @@ export function Orders() {
 
     const toggleOrderDetails = (orderId) => {
         setExpandedOrders((prev) => ({ ...prev, [orderId]: !prev[orderId] }));
-    };
-
-    const calculatePerPlatePrice = (order) => {
-        let total = 0;
-        order.shifts?.forEach((shift) => {
-            shift.categories?.forEach((category) => {
-                category.selectedItems?.forEach((item) => {
-                    total += Number(item.price || 0);
-                });
-            });
-        });
-        return total;
-    };
-
-    const handleItemPriceChange = (orderId, shiftIndex, categoryIndex, itemIndex, newPrice) => {
-        setLocalOrders((prevOrders) =>
-            prevOrders.map((order) => {
-                if (order._id !== orderId) return order;
-                const updatedOrder = JSON.parse(JSON.stringify(order));
-                updatedOrder.shifts[shiftIndex].categories[categoryIndex].selectedItems[itemIndex].price = newPrice;
-                const perPlatePrice = calculatePerPlatePrice(updatedOrder);
-                updatedOrder.grandTotal = Number(updatedOrder.guestCount || 0) * perPlatePrice;
-                return updatedOrder;
-            })
-        );
     };
 
     const handleSaveOrder = async (order) => {
@@ -395,14 +483,44 @@ export function Orders() {
                                                     <div className="p-4 flex-1">
                                                         {shift.categories?.length > 0 ? (
                                                             <div className="space-y-4">
-                                                                {shift.categories.map((category, catIdx) => (
+                                                                {shift.categories.map((category, catIdx) => {
+                                                                    const currentCatPrice = category.categoryPrice !== undefined && category.categoryPrice !== "" 
+                                                                        ? category.categoryPrice 
+                                                                        : category.selectedItems.reduce((acc, item) => acc + Number(item.price || 0), 0);
+
+                                                                    return (
                                                                     <div key={catIdx}>
-                                                                        <h4 className="inline-block text-[10px] font-black text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded mb-2 uppercase border border-indigo-100">
-                                                                            {category.category}
-                                                                        </h4>
+                                                                        {/* 🟢 NEW: Category Header with Editable Category Price */}
+                                                                        <div className="flex items-center justify-between mb-2 gap-2 bg-slate-50 p-1.5 rounded-lg border border-slate-100">
+                                                                            <h4 className="inline-block text-[10px] font-black text-indigo-700 uppercase px-1">
+                                                                                {category.category}
+                                                                            </h4>
+                                                                            <div className="flex items-center gap-2">
+                                                                                <div className="flex items-center bg-white border border-indigo-200 rounded-md overflow-hidden shadow-sm focus-within:border-indigo-400 focus-within:ring-1 focus-within:ring-indigo-400 transition-all">
+                                                                                    <span className="bg-indigo-50 px-1.5 py-1 text-indigo-600 text-[9px] font-bold border-r border-indigo-200 uppercase tracking-wider">
+                                                                                        Total ₹
+                                                                                    </span>
+                                                                                    <input 
+                                                                                        type="number" 
+                                                                                        value={currentCatPrice}
+                                                                                        onChange={(e) => handleCategoryPriceChange(order._id, shiftIdx, catIdx, e.target.value)}
+                                                                                        className="w-16 px-1.5 py-1 text-xs outline-none text-right font-black text-indigo-700" 
+                                                                                        placeholder="0"
+                                                                                    />
+                                                                                </div>
+                                                                                <button 
+                                                                                    onClick={() => handleRemoveCategory(order._id, shiftIdx, catIdx)}
+                                                                                    className="text-slate-400 hover:text-rose-500 transition-colors bg-white p-1 rounded-md border border-slate-200 shadow-sm"
+                                                                                    title="Delete Category"
+                                                                                >
+                                                                                    <TrashIcon className="w-3.5 h-3.5" />
+                                                                                </button>
+                                                                            </div>
+                                                                        </div>
+                                                                        
                                                                         <div className="space-y-1.5">
                                                                             {category.selectedItems.map((item, itemIdx) => (
-                                                                                <div key={itemIdx} className="flex justify-between items-center p-2 rounded-lg border border-transparent hover:border-slate-200 hover:bg-slate-50 transition-all group">
+                                                                                <div key={itemIdx} className="flex justify-between items-center p-2 rounded-lg border border-transparent hover:border-slate-200 hover:bg-slate-50 transition-all group pl-3 border-l-2 border-l-indigo-200">
                                                                                     <div className="flex items-center gap-2 truncate pr-2">
                                                                                         <div className="w-1 h-1 rounded-full bg-slate-400 shrink-0"></div>
                                                                                         <span className="font-bold text-slate-700 text-sm truncate">{item.itemName}</span>
@@ -420,7 +538,7 @@ export function Orders() {
                                                                             ))}
                                                                             
                                                                             {/* Add Item Button */}
-                                                                            <div className="mt-2 pt-2 border-t border-slate-100">
+                                                                            <div className="mt-2 pt-2">
                                                                                 {!showAddItem[`${order._id}-${shiftIdx}-${catIdx}`] ? (
                                                                                     <button onClick={() => setShowAddItem((prev) => ({ ...prev, [`${order._id}-${shiftIdx}-${catIdx}`]: true }))} className="text-xs text-emerald-600 font-bold hover:underline">
                                                                                         + Add Item
@@ -436,7 +554,7 @@ export function Orders() {
                                                                             </div>
                                                                         </div>
                                                                     </div>
-                                                                ))}
+                                                                )})}
                                                             </div>
                                                         ) : (
                                                             <div className="flex flex-col items-center justify-center py-6 text-slate-400">
@@ -444,6 +562,37 @@ export function Orders() {
                                                                 <p className="text-xs font-medium">Empty Shift</p>
                                                             </div>
                                                         )}
+
+                                                        {/* NEW: Add Category Section */}
+                                                        <div className="mt-4 pt-3 border-t border-slate-100">
+                                                            {!showAddCategory[`${order._id}-${shiftIdx}`] ? (
+                                                                <button
+                                                                    onClick={() => setShowAddCategory((prev) => ({ ...prev, [`${order._id}-${shiftIdx}`]: true }))}
+                                                                    className="w-full flex items-center justify-center gap-1.5 text-xs text-indigo-600 font-bold bg-indigo-50 hover:bg-indigo-100 py-2.5 rounded-lg transition-colors border border-indigo-100 border-dashed"
+                                                                >
+                                                                    <PlusCircleIcon className="w-4 h-4" /> नवीन कॅटेगरी जोडा (Add Category)
+                                                                </button>
+                                                            ) : (
+                                                                <div className="flex flex-col gap-2 bg-indigo-50/50 p-3 rounded-xl border border-indigo-100">
+                                                                    <input
+                                                                        type="text"
+                                                                        placeholder="कॅटेगरीचे नाव (उदा. वेलकम ड्रिंक)"
+                                                                        value={newCategoryName[`${order._id}-${shiftIdx}`] || ""}
+                                                                        onChange={(e) => setNewCategoryName((prev) => ({ ...prev, [`${order._id}-${shiftIdx}`]: e.target.value }))}
+                                                                        className="w-full border border-slate-300 rounded-lg text-sm px-3 py-2 outline-none focus:border-indigo-500"
+                                                                    />
+                                                                    <div className="flex items-center gap-2 justify-end mt-1">
+                                                                        <button onClick={() => setShowAddCategory((prev) => ({ ...prev, [`${order._id}-${shiftIdx}`]: false }))} className="text-slate-500 hover:text-slate-700 px-2 py-1 text-xs font-bold transition-colors">
+                                                                            Cancel
+                                                                        </button>
+                                                                        <button onClick={() => handleAddCategory(order._id, shiftIdx)} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-1.5 rounded-lg text-xs font-bold transition-colors shadow-sm">
+                                                                            Save Category
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                        </div>
+
                                                     </div>
                                                 </div>
                                             ))}
