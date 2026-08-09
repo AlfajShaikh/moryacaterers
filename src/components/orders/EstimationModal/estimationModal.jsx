@@ -12,6 +12,28 @@ export function EstimationModal({ order, onClose }) {
         window.print();
     };
 
+    // --- Calculations ---
+    const calculatePerPlatePrice = (order) => {
+        let total = 0;
+        order.shifts?.forEach((shift) => {
+            shift.categories?.forEach((category) => {
+                if (category.categoryPrice !== undefined && category.categoryPrice !== "") {
+                    total += Number(category.categoryPrice);
+                } else {
+                    category.selectedItems?.forEach((item) => {
+                        total += Number(item.price || 0);
+                    });
+                }
+            });
+        });
+        return total;
+    };
+
+    const perPlatePrice = calculatePerPlatePrice(order);
+    const grandTotal = Number(order.grandTotal || 0);
+    const advance = Number(order.advance || 0);
+    const balance = grandTotal - advance;
+
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/80 backdrop-blur-sm p-4 print:absolute print:inset-auto print:top-0 print:left-0 print:w-full print:h-auto print:block print:bg-white print:p-0 printable-modal-wrapper">
 
@@ -68,7 +90,7 @@ export function EstimationModal({ order, onClose }) {
             `}</style>
 
             {/* Modal Container */}
-            <div className="bg-white w-full max-w-4xl max-h-[90vh] rounded-[2rem] shadow-2xl flex flex-col overflow-hidden print:block print:w-full print:h-auto print:max-h-none print:shadow-none print:rounded-none print:overflow-visible print:border-nonem pt-10">
+            <div className="bg-white w-full max-w-4xl max-h-[90vh] rounded-[2rem] shadow-2xl flex flex-col overflow-hidden print:block print:w-full print:h-auto print:max-h-none print:shadow-none print:rounded-none print:overflow-visible print:border-none pt-10">
 
                 {/* Header - Hidden on Print */}
                 <div className="bg-slate-50 px-6 py-4 border-b border-slate-100 flex items-center justify-between print:hidden">
@@ -163,27 +185,37 @@ export function EstimationModal({ order, onClose }) {
                                         <div className="bg-white">
                                             <table className="w-full text-left border-collapse">
                                                 <tbody>
-                                                    {shift.categories?.map((cat, cIdx) => (
+                                                    {shift.categories?.map((cat, cIdx) => {
+                                                        const catTotal = cat.categoryPrice !== undefined && cat.categoryPrice !== "" 
+                                                            ? cat.categoryPrice 
+                                                            : cat.selectedItems.reduce((acc, item) => acc + Number(item.price || 0), 0);
+
+                                                        return (
                                                         <React.Fragment key={cIdx}>
                                                             {/* Category Header Row */}
                                                             <tr className="bg-slate-50 print:bg-transparent avoid-break">
-                                                                <td colSpan={withPrice ? 2 : 1} className="py-2.5 px-5 text-sm font-black text-indigo-600 border-b border-slate-200 bg-indigo-50/50 print:border-b-2 print:border-slate-300 print:text-slate-800">
+                                                                <td colSpan={withPrice ? 1 : 2} className="py-2.5 px-5 text-sm font-black text-indigo-600 border-b border-slate-200 bg-indigo-50/50 print:border-b-2 print:border-slate-300 print:text-slate-800">
                                                                     {cat.category}
                                                                 </td>
+                                                                {withPrice && (
+                                                                    <td className="py-2.5 px-5 text-sm font-black text-indigo-600 border-b border-slate-200 bg-indigo-50/50 print:border-b-2 print:border-slate-300 print:text-slate-800 text-right w-32">
+                                                                        ₹{catTotal}
+                                                                    </td>
+                                                                )}
                                                             </tr>
                                                             {/* Items Rows */}
                                                             {cat.selectedItems?.map((item, iIdx) => (
                                                                 <tr key={iIdx} className="border-b border-slate-100 last:border-b-0 print:border-slate-200 avoid-break">
-                                                                    <td className="py-2.5 px-5 text-sm font-bold text-slate-700">{item.itemName}</td>
-                                                                    {withPrice && (
-                                                                        <td className="py-2.5 px-5 text-sm font-black text-slate-900 text-right w-32">
-                                                                            ₹{item.price}
-                                                                        </td>
-                                                                    )}
+                                                                    <td colSpan={2} className="py-2.5 px-5 text-sm font-bold text-slate-700">
+                                                                        <span className="flex items-center gap-2">
+                                                                            <span className="w-1.5 h-1.5 rounded-full bg-slate-400 print:bg-slate-600"></span>
+                                                                            {item.itemName}
+                                                                        </span>
+                                                                    </td>
                                                                 </tr>
                                                             ))}
                                                         </React.Fragment>
-                                                    ))}
+                                                    )})}
                                                 </tbody>
                                             </table>
                                         </div>
@@ -196,14 +228,33 @@ export function EstimationModal({ order, onClose }) {
                         {withPrice && (
                             <div className="flex justify-end mb-12 avoid-break">
                                 <div className="bg-slate-50 rounded-2xl p-6 w-full max-w-sm border border-slate-200 print:border-slate-300 print:bg-transparent">
-                                    <div className="flex justify-between items-center mb-3">
-                                        <span className="text-sm font-bold text-slate-500">पाहुण्यांची संख्या</span>
-                                        <span className="text-base font-black text-slate-800">{order.guestCount || 0}</span>
+                                    
+                                    <div className="flex justify-between items-center mb-2">
+                                        <span className="text-sm font-bold text-slate-500">प्रति थाळी (Per Plate)</span>
+                                        <span className="text-base font-black text-slate-700">₹{perPlatePrice}</span>
                                     </div>
-                                    <div className="flex justify-between items-center pt-4 border-t border-slate-300 print:border-slate-400">
-                                        <span className="text-lg font-black text-slate-800 uppercase tracking-wider">Grand Total</span>
-                                        <span className="text-2xl font-black text-indigo-600 print:text-slate-900">₹{order.grandTotal?.toLocaleString('en-IN')}</span>
+                                    <div className="flex justify-between items-center mb-4">
+                                        <span className="text-sm font-bold text-slate-500">पाहुण्यांची संख्या (Guests)</span>
+                                        <span className="text-base font-black text-slate-700">× {order.guestCount || 0}</span>
                                     </div>
+
+                                    <div className="flex justify-between items-center pt-3 pb-2 border-t border-slate-300 print:border-slate-400">
+                                        <span className="text-base font-black text-slate-800 uppercase tracking-wider">Grand Total</span>
+                                        <span className="text-xl font-black text-indigo-600 print:text-slate-900">₹{grandTotal.toLocaleString('en-IN')}</span>
+                                    </div>
+
+                                    {advance > 0 && (
+                                        <div className="flex justify-between items-center pt-2 pb-2 text-emerald-600 print:text-emerald-700">
+                                            <span className="text-sm font-bold uppercase tracking-wider">Advance Paid</span>
+                                            <span className="text-lg font-black">- ₹{advance.toLocaleString('en-IN')}</span>
+                                        </div>
+                                    )}
+
+                                    {/* <div className="flex justify-between items-center pt-3 border-t border-slate-300 print:border-slate-400 mt-2">
+                                        <span className="text-lg font-black text-rose-600 print:text-rose-700 uppercase tracking-wider">Balance Due</span>
+                                        <span className="text-2xl font-black text-rose-600 print:text-rose-700">₹{balance.toLocaleString('en-IN')}</span>
+                                    </div> */}
+
                                 </div>
                             </div>
                         )}

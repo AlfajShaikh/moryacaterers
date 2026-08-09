@@ -127,11 +127,21 @@ export function Home() {
     };
 
     // Load both Dashboard counts and Calendar data on mount
-    useEffect(() => {
+useEffect(() => {
+    // Initial load
+    dispatch(getDashboardCounts());
+    dispatch(getCalendar());
+    dispatch(getOrderStatus());
+
+    // Refresh dashboard data automatically
+    const interval = setInterval(() => {
         dispatch(getDashboardCounts());
         dispatch(getCalendar());
         dispatch(getOrderStatus());
-    }, [dispatch]);
+    }, 10000); // 10 seconds
+
+    return () => clearInterval(interval);
+}, [dispatch]);
 
     const user = JSON.parse(localStorage.getItem("user"));
     const role = user?.role;
@@ -457,7 +467,7 @@ export function Home() {
                     </div>
                 )}
 
-               <p className="text-center text-gray-400">@ 2026 Developed by Deenova Digital</p>
+                <p className="text-center text-gray-400">@ 2026 Developed by Deenova Digital</p>
 
             </div>
 

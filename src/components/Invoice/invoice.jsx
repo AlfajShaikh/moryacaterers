@@ -1,6 +1,7 @@
 import { useDispatch, useSelector } from "react-redux";
 import { useEffect, useState } from "react";
 import { getConfirmedInvoices, getInvoiceDetails, searchInvoice, submitInvoice } from "./invoiceSlice";
+import React from "react";
 import {
     MagnifyingGlassIcon,
     ReceiptPercentIcon,
@@ -12,8 +13,13 @@ import {
     InboxIcon,
     BanknotesIcon,
     HashtagIcon,
-    PrinterIcon
+    PrinterIcon,
+    ClockIcon // <-- नवीन History आयकॉन
 } from "@heroicons/react/24/outline";
+import { BillingHistory } from "./BillingHistory/billingHistory";
+
+// नवीन History कंपोनंट इम्पोर्ट करा
+
 
 export function Invoice() {
     const dispatch = useDispatch();
@@ -21,6 +27,9 @@ export function Invoice() {
     const { invoices, invoiceDetails, loading } = useSelector((state) => state.invoice);
     const [name, setName] = useState("");
     const [statusMessage, setStatusMessage] = useState("");
+
+    // --- State for Toggling History Page ---
+    const [showHistory, setShowHistory] = useState(false);
 
     // --- Editable Invoice State ---
     const [editableInvoice, setEditableInvoice] = useState(null);
@@ -64,9 +73,13 @@ export function Invoice() {
             let perPlatePrice = 0;
             invoiceDetails.shifts?.forEach(shift => {
                 shift.categories?.forEach(cat => {
-                    cat.selectedItems?.forEach(item => {
-                        perPlatePrice += Number(item.price || 0);
-                    });
+                    if (cat.categoryPrice !== undefined && cat.categoryPrice !== "") {
+                        perPlatePrice += Number(cat.categoryPrice);
+                    } else {
+                        cat.selectedItems?.forEach(item => {
+                            perPlatePrice += Number(item.price || 0);
+                        });
+                    }
                 });
             });
 
@@ -114,36 +127,66 @@ export function Invoice() {
         });
     };
 
-    // Handle Item Price Changes
-    const handlePriceChange = (shiftIndex, catIndex, itemIndex, newPrice) => {
-        const updated = { ...editableInvoice };
-        updated.shifts[shiftIndex].categories[catIndex].selectedItems[itemIndex].price = Number(newPrice);
-
-        let perPlate = 0;
-        updated.shifts.forEach((shift, sIdx) => {
-            let shiftTotal = 0;
-            shift.categories.forEach(cat => {
-                cat.selectedItems.forEach(item => {
-                    shiftTotal += Number(item.price || 0);
+    // Handle Category Price Changes 
+    const handleCategoryPriceChange = (shiftIndex, catIndex, newPrice) => {
+        setEditableInvoice(prev => {
+            const updated = { ...prev };
+            updated.shifts[shiftIndex].categories[catIndex].categoryPrice = Number(newPrice);
+            
+            let perPlate = 0;
+            updated.shifts.forEach((shift) => {
+                shift.categories.forEach(cat => {
+                    if (cat.categoryPrice !== undefined && cat.categoryPrice !== "") {
+                        perPlate += Number(cat.categoryPrice);
+                    } else {
+                        cat.selectedItems.forEach(item => {
+                            perPlate += Number(item.price || 0);
+                        });
+                    }
                 });
             });
-            updated.shifts[sIdx].total = shiftTotal;
-            perPlate += shiftTotal;
+
+            updated.perPlatePrice = perPlate;
+            updated.grandTotal = perPlate * Number(updated.guestCount || 0);
+            updated.balanceAmount = updated.grandTotal - Number(updated.discount || 0) - Number(updated.advancePayment || 0);
+            
+            return updated;
         });
+    };
 
-        updated.perPlatePrice = perPlate;
-        updated.grandTotal = perPlate * Number(updated.guestCount || 0);
-        updated.balanceAmount = updated.grandTotal - Number(updated.discount || 0) - Number(updated.advancePayment || 0);
+    // Handle Individual Item Price Changes
+    const handlePriceChange = (shiftIndex, catIndex, itemIndex, newPrice) => {
+        setEditableInvoice(prev => {
+            const updated = { ...prev };
+            updated.shifts[shiftIndex].categories[catIndex].selectedItems[itemIndex].price = Number(newPrice);
 
-        setEditableInvoice(updated);
+            const newCatSum = updated.shifts[shiftIndex].categories[catIndex].selectedItems.reduce((sum, item) => sum + Number(item.price || 0), 0);
+            updated.shifts[shiftIndex].categories[catIndex].categoryPrice = newCatSum;
+
+            let perPlate = 0;
+            updated.shifts.forEach((shift) => {
+                shift.categories.forEach(cat => {
+                    if (cat.categoryPrice !== undefined && cat.categoryPrice !== "") {
+                        perPlate += Number(cat.categoryPrice);
+                    } else {
+                        cat.selectedItems.forEach(item => {
+                            perPlate += Number(item.price || 0);
+                        });
+                    }
+                });
+            });
+
+            updated.perPlatePrice = perPlate;
+            updated.grandTotal = perPlate * Number(updated.guestCount || 0);
+            updated.balanceAmount = updated.grandTotal - Number(updated.discount || 0) - Number(updated.advancePayment || 0);
+
+            return updated;
+        });
     };
 
     // Submit & Print
     const handleSubmitAndPrint = async () => {
-        const isConfirmed = window.confirm(
-            "Are you sure you want to submit the invoice?"
-        );
-
+        const isConfirmed = window.confirm("Are you sure you want to submit the invoice?");
         if (!isConfirmed) return;
 
         const payload = {
@@ -152,21 +195,17 @@ export function Invoice() {
             invoiceDate: editableInvoice.paymentDate,
             customerName: editableInvoice.customerName,
             mobile: editableInvoice.mobile,
-
             paymentMode: editableInvoice.paymentMethod,
-            paymentStatus: editableInvoice.paymentStatus, // <-- ADD THIS
-
+            paymentStatus: editableInvoice.paymentStatus,
             advanceAmount: Number(editableInvoice.advancePayment),
             discount: Number(editableInvoice.discount),
             gst: Number(editableInvoice.gst || 0),
-
             items: [],
-
             totalAmount: Number(editableInvoice.perPlatePrice),
             finalAmount: Number(editableInvoice.balanceAmount),
-
             status: "success"
         };
+        
         editableInvoice.shifts?.forEach((shift) => {
             shift.categories?.forEach((category) => {
                 category.selectedItems?.forEach((item) => {
@@ -179,44 +218,41 @@ export function Invoice() {
         });
 
         try {
-
             console.log("Submitting Payload:", payload);
             await dispatch(submitInvoice(payload)).unwrap();
-
             alert("Invoice Submitted Successfully");
-
             window.print();
-
         } catch (err) {
             alert(err?.message || "Failed to submit invoice");
         }
     };
+
+    // 🟢 जर showHistory TRUE असेल तर फक्त BillingHistory पेज रेंडर करा (हे पेज प्रिंट होणार नाही)
+    if (showHistory) {
+        return <BillingHistory onBack={() => setShowHistory(false)} />;
+    }
 
     return (
         <div className="w-full bg-slate-50/50">
             {/* 🖨️ PRINT STYLES - HIDES SIDEBAR & NAVBAR */}
             <style>{`
                 @media print {
-                    /* Reset body margins and background */
                     body, html, main, #root { 
                         background-color: white !important; 
-                        -webkit-print-color-adjust: exact; 
+                        -webkit-print-color-adjust: exact !important; 
+                        color-adjust: exact !important;
                         margin: 0 !important; 
                         padding: 0 !important;
+                        height: auto !important;
+                        overflow: visible !important;
                     }
-                    
-                    /* HIDE THE SIDEBAR, DRAWER, HEADER AND PROFILE ICON */
                     header, nav, aside, footer, 
                     .sidebar, .navbar, .drawer, [class*="sidebar"], [class*="header"] {
                         display: none !important;
                     }
-
-                    /* HIDE THE SCREEN LAYOUT (Buttons, Search Bar etc.) */
                     .screen-layout {
                         display: none !important;
                     }
-
-                    /* SHOW ONLY THE PRINT LAYOUT AND FORCE IT TO FULL WIDTH */
                     .print-layout {
                         display: block !important;
                         position: absolute !important;
@@ -225,9 +261,16 @@ export function Invoice() {
                         width: 100vw !important;
                         margin: 0 !important;
                         padding: 0 !important;
+                        overflow: visible !important;
                     }
-
-                    @page { size: A4 portrait; margin: 10mm; }
+                    tr, td, th, .avoid-break {
+                        page-break-inside: avoid !important;
+                        break-inside: avoid !important;
+                    }
+                    table {
+                        page-break-inside: auto !important;
+                    }
+                    @page { size: A4 portrait; margin: 15mm; }
                 }
 
                 .custom-scrollbar::-webkit-scrollbar { width: 6px; }
@@ -261,6 +304,15 @@ export function Invoice() {
                                 ग्राहकांची पक्की बिले (Invoices) संपादित करा आणि प्रिंट करा.
                             </p>
                         </div>
+                        
+                        {/* 🟢 नवीन History Button 🟢 */}
+                        <button 
+                            onClick={() => setShowHistory(true)}
+                            className="flex items-center gap-2 bg-white border border-slate-200 text-slate-700 hover:text-indigo-600 hover:border-indigo-300 hover:bg-indigo-50 px-5 py-3 rounded-xl font-bold transition-all shadow-sm active:scale-95"
+                        >
+                            <ClockIcon className="w-6 h-6 text-indigo-500" />
+                            बिलिंग इतिहास (History)
+                        </button>
                     </div>
 
                     <div className="flex flex-col lg:flex-row gap-8 items-start">
@@ -306,17 +358,10 @@ export function Invoice() {
                                     <div className="space-y-3">
                                         {[...invoices]
                                             .sort((a, b) => {
-                                                // Unpaid -> Partially Paid -> Paid
-                                                const order = {
-                                                    "Unpaid": 0,
-                                                    "Partially Paid": 1,
-                                                    "Paid": 2
-                                                };
-
+                                                const order = { "Unpaid": 0, "Partially Paid": 1, "Paid": 2 };
                                                 return (order[a.paymentStatus] ?? 99) - (order[b.paymentStatus] ?? 99);
                                             })
                                             .map((item) => {
-
                                                 const isActive = invoiceDetails?.id === item._id;
                                                 const isPaid = item.paymentStatus === "Paid";
 
@@ -324,54 +369,36 @@ export function Invoice() {
                                                     <div
                                                         key={item._id}
                                                         onClick={() => {
-                                                            if (!isPaid) {
-                                                                handleInvoiceClick(item);
-                                                            }
+                                                            if (!isPaid) handleInvoiceClick(item);
                                                         }}
-                                                        className={`
-                    p-4 rounded-2xl border-2 transition-all duration-200
-                    ${isPaid
-                                                                ? "bg-gray-100 border-gray-200 opacity-60 cursor-not-allowed"
-                                                                : isActive
-                                                                    ? "bg-indigo-50 border-indigo-500 shadow-md ring-4 ring-indigo-50 cursor-pointer"
-                                                                    : "bg-white border-slate-100 hover:border-indigo-200 hover:shadow-sm cursor-pointer"
-                                                            }
-                `}
+                                                        className={`p-4 rounded-2xl border-2 transition-all duration-200 ${
+                                                            isPaid ? "bg-gray-100 border-gray-200 opacity-60 cursor-not-allowed"
+                                                                : isActive ? "bg-indigo-50 border-indigo-500 shadow-md ring-4 ring-indigo-50 cursor-pointer"
+                                                                : "bg-white border-slate-100 hover:border-indigo-200 hover:shadow-sm cursor-pointer"
+                                                        }`}
                                                     >
                                                         <h4 className={`font-black text-lg truncate flex justify-between ${isActive ? "text-indigo-700" : "text-slate-800"}`}>
                                                             <p>{item.customerName}</p>
-
                                                             <p className="text-sm text-green-500">
-                                                                {item?.eventDate
-                                                                    ? new Date(item.eventDate).toLocaleDateString("en-IN")
-                                                                    : "-"}
+                                                                {item?.eventDate ? new Date(item.eventDate).toLocaleDateString("en-IN") : "-"}
                                                             </p>
                                                         </h4>
 
                                                         <div className="flex justify-between items-center mt-2">
-                                                            <span
-                                                                className={`text-xs font-bold px-2.5 py-1 rounded-md ${item.status === "Confirmed"
-                                                                    ? "bg-emerald-100 text-emerald-700"
-                                                                    : "bg-slate-100 text-slate-500"
-                                                                    }`}
-                                                            >
+                                                            <span className={`text-xs font-bold px-2.5 py-1 rounded-md ${item.status === "Confirmed" ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
                                                                 {item.status}
                                                             </span>
 
-                                                            <span
-                                                                className={`text-xs font-bold px-2.5 py-1 rounded-md ${item.paymentStatus === "Paid"
-                                                                    ? "bg-green-100 text-green-700"
-                                                                    : item.paymentStatus === "Partially Paid"
-                                                                        ? "bg-yellow-100 text-yellow-700"
-                                                                        : "bg-red-100 text-red-700"
-                                                                    }`}
-                                                            >
+                                                            <span className={`text-xs font-bold px-2.5 py-1 rounded-md ${
+                                                                item.paymentStatus === "Paid" ? "bg-green-100 text-green-700"
+                                                                : item.paymentStatus === "Partially Paid" ? "bg-yellow-100 text-yellow-700"
+                                                                : "bg-red-100 text-red-700"
+                                                            }`}>
                                                                 {item.paymentStatus || "Unpaid"}
                                                             </span>
 
                                                             <span className={`font-black ${isActive ? "text-indigo-700" : "text-slate-800"}`}>
-                                                                ₹{item.grandTotal?.toLocaleString("en-IN") ||
-                                                                    item.totalAmount?.toLocaleString("en-IN")}
+                                                                ₹{item.grandTotal?.toLocaleString("en-IN") || item.totalAmount?.toLocaleString("en-IN")}
                                                             </span>
                                                         </div>
                                                     </div>
@@ -445,8 +472,6 @@ export function Invoice() {
                                                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Customer</p>
                                                         <p className="font-black text-lg text-slate-800">{editableInvoice.customerName}</p>
                                                     </div>
-
-                                                    {/* <p>ID MY : {editableInvoice.id} </p> */}
                                                 </div>
                                                 <div className="flex items-center gap-3">
                                                     <div className="p-2 bg-white rounded-lg shadow-sm border border-slate-200 text-indigo-500"><PhoneIcon className="w-5 h-5" /></div>
@@ -479,27 +504,46 @@ export function Invoice() {
                                                         <h3 className="font-black text-slate-800 text-lg uppercase tracking-wider">{shift.shift} Shift</h3>
                                                     </div>
                                                     <div className="p-5 bg-white space-y-4">
-                                                        {shift.categories?.map((category, catIndex) => (
+                                                        {shift.categories?.map((category, catIndex) => {
+                                                            const currentCatPrice = category.categoryPrice !== undefined && category.categoryPrice !== "" 
+                                                                ? category.categoryPrice 
+                                                                : category.selectedItems.reduce((acc, item) => acc + Number(item.price || 0), 0);
+
+                                                            return (
                                                             <div key={catIndex}>
-                                                                <h4 className="inline-block text-xs font-black text-indigo-600 bg-indigo-50 px-3 py-1 rounded-md mb-2 tracking-widest uppercase border border-indigo-100">
-                                                                    {category.category}
-                                                                </h4>
-                                                                <div className="overflow-hidden border border-slate-100 rounded-xl">
+                                                                <div className="flex items-center justify-between mb-2 gap-2 bg-indigo-50 p-2 rounded-lg border border-indigo-100">
+                                                                    <h4 className="text-xs font-black text-indigo-700 uppercase tracking-widest">
+                                                                        {category.category}
+                                                                    </h4>
+                                                                    <div className="flex items-center bg-white border border-indigo-200 rounded-md overflow-hidden shadow-sm">
+                                                                        <span className="bg-indigo-50 px-2 py-1 text-indigo-600 text-[10px] font-bold border-r border-indigo-200 uppercase tracking-wider">
+                                                                            Total ₹
+                                                                        </span>
+                                                                        <input 
+                                                                            type="number" 
+                                                                            value={currentCatPrice}
+                                                                            onChange={(e) => handleCategoryPriceChange(shiftIndex, catIndex, e.target.value)}
+                                                                            className="w-20 px-2 py-1 text-sm outline-none text-right font-black text-indigo-700" 
+                                                                            placeholder="0"
+                                                                        />
+                                                                    </div>
+                                                                </div>
+
+                                                                <div className="overflow-hidden border border-slate-100 rounded-xl mb-4">
                                                                     <table className="w-full text-left border-collapse">
-                                                                        <thead className="bg-slate-50 border-b border-slate-200">
-                                                                            <tr>
-                                                                                <th className="py-2 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Item Name</th>
-                                                                                <th className="py-2 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Price</th>
-                                                                            </tr>
-                                                                        </thead>
                                                                         <tbody className="divide-y divide-slate-100">
                                                                             {category.selectedItems?.map((item, index) => (
                                                                                 <tr key={index} className="hover:bg-slate-50/50 transition-colors">
-                                                                                    <td className="py-2 px-4 font-semibold text-slate-700">{item.itemName}</td>
+                                                                                    <td className="py-2 px-4 font-semibold text-slate-700 text-sm">
+                                                                                        <span className="flex items-center gap-2">
+                                                                                            <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+                                                                                            {item.itemName}
+                                                                                        </span>
+                                                                                    </td>
                                                                                     <td className="py-2 px-4 text-right">
                                                                                         <div className="flex items-center justify-end gap-1">
-                                                                                            <span className="font-bold text-slate-400">₹</span>
-                                                                                            <input type="number" value={item.price} onChange={(e) => handlePriceChange(shiftIndex, catIndex, index, e.target.value)} className="w-20 px-2 py-1 bg-white border border-slate-200 rounded-md text-right font-black text-slate-800 outline-none focus:border-indigo-500" />
+                                                                                            <span className="font-bold text-slate-400 text-xs">₹</span>
+                                                                                            <input type="number" value={item.price || 0} onChange={(e) => handlePriceChange(shiftIndex, catIndex, index, e.target.value)} className="w-16 px-2 py-1 bg-white border border-slate-200 rounded-md text-right font-bold text-slate-800 text-xs outline-none focus:border-indigo-500" />
                                                                                         </div>
                                                                                     </td>
                                                                                 </tr>
@@ -508,7 +552,7 @@ export function Invoice() {
                                                                     </table>
                                                                 </div>
                                                             </div>
-                                                        ))}
+                                                        )})}
                                                     </div>
                                                 </div>
                                             ))}
@@ -584,102 +628,121 @@ export function Invoice() {
                 <div className="print-layout hidden print:block bg-white text-black font-sans">
 
                     {/* Header: Company Name */}
-                    <div className="text-center border-b-2 border-gray-800 pb-4 mb-6 mt-4">
-                        <h1 className="text-3xl font-black uppercase text-gray-900 tracking-wider">Morya Caterers</h1>
+                    <div className="text-center border-b-[3px] border-gray-800 pb-4 mb-6 mt-4 avoid-break">
+                        <h1 className="text-4xl font-black uppercase text-gray-900 tracking-wider">Morya Caterers</h1>
                         <p className="text-sm font-bold text-gray-600 uppercase tracking-widest mt-1">Tax Invoice / Bill</p>
                     </div>
 
                     {/* Customer & Invoice Details */}
-                    <div className="flex justify-between items-start mb-6 text-sm">
-                        <div>
-                            <p className="mb-1"><span className="font-bold text-gray-500 uppercase">Customer Name:</span> <br /> <strong className="text-lg">{editableInvoice.customerName}</strong></p>
+                    <div className="flex justify-between items-start mb-8 text-sm avoid-break">
+                        <div className="bg-gray-50 p-4 border border-gray-200 rounded-xl w-[48%]">
+                            <p className="mb-2"><span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Customer Name</span> <strong className="text-lg">{editableInvoice.customerName}</strong></p>
                             <p className="mb-1"><span className="font-bold">Mobile:</span> {editableInvoice.mobile}</p>
                             {editableInvoice.address && <p className="mb-1"><span className="font-bold">Address:</span> {editableInvoice.address}</p>}
                             <p className="mb-1"><span className="font-bold">Event Type:</span> {editableInvoice.eventType} ({new Date(editableInvoice.eventDate).toLocaleDateString("en-IN")})</p>
                         </div>
-                        <div className="text-right">
-                            <p className="mb-1"><span className="font-bold text-gray-500 uppercase">Invoice No:</span> <br /> <strong className="text-lg">{editableInvoice.invoiceNo}</strong></p>
+                        <div className="bg-gray-50 p-4 border border-gray-200 rounded-xl w-[48%] text-right">
+                            <p className="mb-2"><span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Invoice No</span> <strong className="text-lg">{editableInvoice.invoiceNo}</strong></p>
                             <p className="mb-1"><span className="font-bold">Date:</span> {new Date(editableInvoice.paymentDate).toLocaleDateString("en-IN")}</p>
                             <p className="mb-1"><span className="font-bold">Payment Method:</span> {editableInvoice.paymentMethod}</p>
                             <p className="mb-1"><span className="font-bold">Status:</span> {editableInvoice.paymentStatus}</p>
                         </div>
                     </div>
 
-                    {/* Compact Items Table */}
-                    <div className="mb-6">
-                        <table className="w-full border-collapse border border-gray-400 text-sm">
-                            <thead>
-                                <tr className="bg-gray-100">
-                                    <th className="border border-gray-400 px-3 py-2 text-left w-1/3">Shift & Category</th>
-                                    <th className="border border-gray-400 px-3 py-2 text-left w-1/2">Item Name</th>
-                                    <th className="border border-gray-400 px-3 py-2 text-right w-1/6">Price</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {editableInvoice.shifts?.map((shift) => (
-                                    shift.categories?.map((cat) => (
-                                        cat.selectedItems?.map((item, idx) => (
-                                            <tr key={`${shift.shift}-${cat.category}-${idx}`}>
-                                                <td className="border border-gray-400 px-3 py-1.5 text-gray-700">{shift.shift} - {cat.category}</td>
-                                                <td className="border border-gray-400 px-3 py-1.5 font-semibold text-gray-900">{item.itemName}</td>
-                                                <td className="border border-gray-400 px-3 py-1.5 text-right font-bold">₹{item.price?.toLocaleString('en-IN')}</td>
-                                            </tr>
-                                        ))
-                                    ))
-                                ))}
-                            </tbody>
-                        </table>
+                    {/* Compact Items Table (Mirroring Estimation Modal) */}
+                    <div className="mb-8 space-y-6">
+                        {editableInvoice.shifts?.map((shift, sIdx) => {
+                            if (!shift.categories || shift.categories.length === 0) return null;
+                            
+                            return (
+                                <div key={sIdx} className="border border-gray-300 rounded-xl overflow-hidden avoid-break">
+                                    <div className="bg-gray-800 text-white px-4 py-2 border-b border-gray-300">
+                                        <h3 className="font-black tracking-wider uppercase text-sm">{shift.shift} Shift</h3>
+                                    </div>
+                                    <table className="w-full text-left border-collapse">
+                                        <tbody>
+                                            {shift.categories?.map((cat, cIdx) => {
+                                                const catTotal = cat.categoryPrice !== undefined && cat.categoryPrice !== "" 
+                                                    ? cat.categoryPrice 
+                                                    : cat.selectedItems.reduce((acc, item) => acc + Number(item.price || 0), 0);
+
+                                                return (
+                                                <React.Fragment key={cIdx}>
+                                                    <tr className="bg-gray-100 avoid-break border-b-2 border-gray-200">
+                                                        <td className="py-2 px-4 text-sm font-black text-gray-800 uppercase">
+                                                            {cat.category}
+                                                        </td>
+                                                        <td className="py-2 px-4 text-sm font-black text-gray-800 text-right w-32">
+                                                            ₹{catTotal}
+                                                        </td>
+                                                    </tr>
+                                                    {cat.selectedItems?.map((item, iIdx) => (
+                                                        <tr key={iIdx} className="border-b border-gray-100 last:border-0 avoid-break">
+                                                            <td colSpan={2} className="py-1.5 px-4 text-sm font-bold text-gray-700">
+                                                                <span className="flex items-center gap-2">
+                                                                    <span className="w-1.5 h-1.5 rounded-full bg-gray-500"></span>
+                                                                    {item.itemName}
+                                                                </span>
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </React.Fragment>
+                                            )})}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            );
+                        })}
                     </div>
 
-                    {/* Calculation Summary Table (Right Aligned) */}
-                    <div className="flex justify-end mb-8">
-                        <table className="w-2/3 md:w-1/2 border-collapse border border-gray-400 text-sm">
-                            <tbody>
-                                <tr>
-                                    <td className="border border-gray-400 px-4 py-2 font-semibold text-gray-600">Per Plate Price</td>
-                                    <td className="border border-gray-400 px-4 py-2 text-right">₹{editableInvoice.perPlatePrice?.toLocaleString('en-IN')}</td>
-                                </tr>
-                                <tr>
-                                    <td className="border border-gray-400 px-4 py-2 font-semibold text-gray-600">Guest Count</td>
-                                    <td className="border border-gray-400 px-4 py-2 text-right">× {editableInvoice.guestCount}</td>
-                                </tr>
-                                <tr className="bg-gray-50">
-                                    <td className="border border-gray-400 px-4 py-2 font-bold text-gray-800">Calculated Total</td>
-                                    <td className="border border-gray-400 px-4 py-2 text-right font-bold">₹{(editableInvoice.perPlatePrice * editableInvoice.guestCount).toLocaleString('en-IN')}</td>
-                                </tr>
-                                <tr>
-                                    <td className="border border-gray-400 px-4 py-2 font-bold text-gray-900">Grand Total</td>
-                                    <td className="border border-gray-400 px-4 py-2 text-right font-bold text-gray-900">₹{editableInvoice.grandTotal?.toLocaleString('en-IN')}</td>
-                                </tr>
-                                <tr>
-                                    <td className="border border-gray-400 px-4 py-2 font-semibold text-gray-600">Discount</td>
-                                    <td className="border border-gray-400 px-4 py-2 text-right font-bold">- ₹{editableInvoice.discount?.toLocaleString('en-IN')}</td>
-                                </tr>
-                                <tr>
-                                    <td className="border border-gray-400 px-4 py-2 font-semibold text-gray-600">Advance Payment</td>
-                                    <td className="border border-gray-400 px-4 py-2 text-right font-bold">- ₹{editableInvoice.advancePayment?.toLocaleString('en-IN')}</td>
-                                </tr>
-                                <tr className="bg-gray-200">
-                                    <td className="border border-gray-400 px-4 py-3 font-black text-lg text-gray-900 uppercase">Balance Due</td>
-                                    <td className="border border-gray-400 px-4 py-3 text-right font-black text-lg text-gray-900">₹{editableInvoice.balanceAmount?.toLocaleString('en-IN')}</td>
-                                </tr>
-                            </tbody>
-                        </table>
+                    {/* Calculation Summary Table */}
+                    <div className="flex justify-end mb-12 avoid-break">
+                        <div className="bg-gray-50 border border-gray-300 rounded-xl p-5 w-full max-w-sm">
+                            <div className="flex justify-between items-center mb-2">
+                                <span className="text-sm font-bold text-gray-500">प्रति थाळी (Per Plate)</span>
+                                <span className="text-base font-black text-gray-700">₹{editableInvoice.perPlatePrice?.toLocaleString('en-IN')}</span>
+                            </div>
+                            <div className="flex justify-between items-center mb-4">
+                                <span className="text-sm font-bold text-gray-500">पाहुण्यांची संख्या (Guests)</span>
+                                <span className="text-base font-black text-gray-700">× {editableInvoice.guestCount}</span>
+                            </div>
+                            <div className="flex justify-between items-center pt-3 pb-2 border-t border-gray-300">
+                                <span className="text-base font-black text-gray-800 uppercase tracking-wider">Grand Total</span>
+                                <span className="text-xl font-black text-gray-900">₹{editableInvoice.grandTotal?.toLocaleString('en-IN')}</span>
+                            </div>
+                            {editableInvoice.discount > 0 && (
+                                <div className="flex justify-between items-center pt-1 pb-1 text-gray-600">
+                                    <span className="text-sm font-bold uppercase tracking-wider">Discount</span>
+                                    <span className="text-base font-black">- ₹{editableInvoice.discount?.toLocaleString('en-IN')}</span>
+                                </div>
+                            )}
+                            {editableInvoice.advancePayment > 0 && (
+                                <div className="flex justify-between items-center pt-1 pb-2 text-gray-600">
+                                    <span className="text-sm font-bold uppercase tracking-wider">Advance Paid</span>
+                                    <span className="text-base font-black">- ₹{editableInvoice.advancePayment?.toLocaleString('en-IN')}</span>
+                                </div>
+                            )}
+                            <div className="flex justify-between items-center pt-3 border-t border-gray-400 mt-2">
+                                <span className="text-lg font-black text-gray-900 uppercase tracking-wider">Balance Due</span>
+                                <span className="text-2xl font-black text-gray-900">₹{editableInvoice.balanceAmount?.toLocaleString('en-IN')}</span>
+                            </div>
+                        </div>
                     </div>
 
-                    {/* Signatures */}
-                    <div className="flex justify-between mt-16 pt-8 text-sm">
+                    {/* Signatures Area */}
+                    <div className="flex justify-between items-end mt-16 pt-10 border-t border-gray-300 avoid-break">
                         <div className="text-center">
-                            <div className="w-48 border-t border-gray-500 mx-auto"></div>
-                            <p className="mt-2 font-bold text-gray-700">Customer Signature</p>
+                            <div className="w-48 border-b-2 border-gray-800 mb-2"></div>
+                            <p className="text-sm font-bold text-gray-600 uppercase tracking-widest">Customer Signature</p>
                         </div>
                         <div className="text-center">
-                            <div className="w-48 border-t border-gray-500 mx-auto"></div>
-                            <p className="mt-2 font-bold text-gray-700">Manager / Owner (Morya Caterers)</p>
+                            <div className="w-48 border-b-2 border-gray-800 mb-2"></div>
+                            <p className="text-sm font-bold text-gray-600 uppercase tracking-widest">Manager / Owner</p>
+                            <p className="text-xs font-semibold text-gray-500 mt-1">Morya Caterers</p>
                         </div>
                     </div>
                 </div>
             )}
-        </div>
+        </div>  
     );
 }

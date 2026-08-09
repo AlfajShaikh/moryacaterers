@@ -32,12 +32,12 @@ export function Menu() {
     // NEW STATE: Tracks which shifts are already booked for the selected date
     const [bookedShifts, setBookedShifts] = useState([]);
 
-    
+
 
     const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
 
-    
+
 
     const [customer, setCustomer] = useState({
         name: "",
@@ -98,7 +98,7 @@ export function Menu() {
 
     const [isCartOpen, setIsCartOpen] = useState(false);
 
-    
+
 
     useEffect(() => {
         dispatch(getAllMenus());
@@ -212,8 +212,8 @@ export function Menu() {
             email: customer.email,
             eventDate: eventDetails.eventDate,
             eventType: eventDetails.eventType,
-            advance : "0",
-            paymentStatus:"Unpaid",
+            advance: "0",
+            paymentStatus: "Unpaid",
             shifts,
         };
 
@@ -257,7 +257,7 @@ export function Menu() {
 
                 {/* Customer Details Form */}
                 {!showMenu && (
-                    
+
                     <div className="mt-4 mb-5 bg-white/80 backdrop-blur-xl border border-white rounded-3xl p-6 md:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] max-w-3xl">
 
                         <div className="mb-8">
@@ -337,7 +337,7 @@ export function Menu() {
                                 <label className="text-sm font-bold text-slate-700">ग्राहकाचे नाव<span className="text-rose-500">*</span></label>
                                 <div className="relative mt-2">
                                     <UserIcon className="w-5 h-5 absolute left-4 top-3.5 text-slate-400" />
-                                    <input type="text" placeholder="तुमचे नाव लिहा" value={customer.name} onChange={(e) => setCustomer({ ...customer, name: e.target.value })} className="w-full rounded-xl border border-slate-300 bg-white/50 pl-12 pr-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition" />
+                                    <input type="text" placeholder="तुमचे नाव लिहा" value={customer.name} onChange={(e) => setCustomer({ ...customer, name: e.target.value.toUpperCase() })} className="w-full rounded-xl border border-slate-300 bg-white/50 pl-12 pr-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition" />
                                 </div>
                             </div>
 
@@ -411,7 +411,7 @@ export function Menu() {
                         </button>
                     </div>
                 )}
-<p className="text-center text-gray-400">@ 2026 Developed by Deenova Digital</p>
+                <p className="text-center text-gray-400">@ 2026 Developed by Deenova Digital</p>
 
                 {/* Menu Selection Section */}
                 {showMenu && (
