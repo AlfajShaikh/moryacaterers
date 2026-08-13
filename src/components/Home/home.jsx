@@ -7,7 +7,13 @@ import {
     DocumentPlusIcon,
     ReceiptPercentIcon,
     ArrowUpRightIcon,
-    BellAlertIcon
+    BellAlertIcon,
+    ClockIcon,
+    CheckBadgeIcon,
+    QuestionMarkCircleIcon,
+    XCircleIcon,
+    ChartBarIcon,
+    ChartPieIcon // <-- नवीन आयकॉन (Graphical Report साठी)
 } from "@heroicons/react/24/outline";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -36,21 +42,21 @@ export function Home() {
             title: "मेनू पदार्थ",
             value: counts.menuItemCount || 0,
             icon: CakeIcon,
-            bgClass: "bg-gradient-to-br from-rose-400 to-pink-600 shadow-pink-500/30",
+            bgClass: "bg-gradient-to-br from-rose-500 to-pink-600 shadow-pink-500/20",
             path: "/menu",
         },
         {
-            title: "ऑर्डर्स",
+            title: "एकूण ऑर्डर्स",
             value: counts.orderCount || 0,
             icon: ClipboardDocumentListIcon,
-            bgClass: "bg-gradient-to-br from-cyan-400 to-blue-600 shadow-blue-500/30",
+            bgClass: "bg-gradient-to-br from-blue-500 to-indigo-600 shadow-blue-500/20",
             path: "",
         },
         {
             title: "आगामी कार्यक्रम",
             value: counts.upcomingEventCount || 0,
             icon: CalendarDaysIcon,
-            bgClass: "bg-gradient-to-br from-fuchsia-400 to-purple-600 shadow-purple-500/30",
+            bgClass: "bg-gradient-to-br from-violet-500 to-purple-600 shadow-purple-500/20",
             path: "/events",
         },
     ];
@@ -60,56 +66,41 @@ export function Home() {
             title: "नवीन ऑर्डर",
             description: "नवीन ग्राहक ऑर्डर तयार करा",
             icon: PlusCircleIcon,
-            cardBg: "bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 border-blue-200",
-            iconBg: "bg-white",
-            iconColor: "text-blue-600",
-            titleColor: "text-blue-900",
-            descColor: "text-blue-700",
+            hoverClass: "hover:border-blue-300 hover:bg-blue-50",
+            iconBg: "bg-blue-100 text-blue-600",
             path: "/orders",
             onClick: handleOrderClick
         },
         {
-            title: "मेनू कार्ड ",
+            title: "मेनू कार्ड",
             description: "मेनू कार्ड पहा",
             icon: DocumentPlusIcon,
-            cardBg: "bg-gradient-to-br from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 border-purple-200",
-            iconBg: "bg-white",
-            iconColor: "text-pink-600",
-            titleColor: "text-pink-900",
-            descColor: "text-pink-700",
-            path: "/menu ",
+            hoverClass: "hover:border-pink-300 hover:bg-pink-50",
+            iconBg: "bg-pink-100 text-pink-600",
+            path: "/menu",
         },
         {
             title: "मेनू पदार्थ जोडा",
             description: "नवीन पदार्थ जोडा",
-            icon: DocumentPlusIcon,
-            cardBg: "bg-gradient-to-br from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 border-purple-200",
-            iconBg: "bg-white",
-            iconColor: "text-purple-600",
-            titleColor: "text-purple-900",
-            descColor: "text-purple-700",
+            icon: CakeIcon,
+            hoverClass: "hover:border-purple-300 hover:bg-purple-50",
+            iconBg: "bg-purple-100 text-purple-600",
             path: "/addmenu",
         },
         {
             title: "बिल तयार करा",
             description: "ऑर्डरसाठी बिल तयार करा",
             icon: ReceiptPercentIcon,
-            cardBg: "bg-gradient-to-br from-amber-50 to-amber-100 hover:from-amber-100 hover:to-amber-200 border-amber-200",
-            iconBg: "bg-white",
-            iconColor: "text-amber-600",
-            titleColor: "text-amber-900",
-            descColor: "text-amber-700",
+            hoverClass: "hover:border-amber-300 hover:bg-amber-50",
+            iconBg: "bg-amber-100 text-amber-600",
             path: "/invoice",
         },
         {
             title: "वापरकर्ता जोडा",
             description: "नवीन कर्मचारी किंवा ग्राहक नोंदवा",
             icon: UserPlusIcon,
-            cardBg: "bg-gradient-to-br from-emerald-50 to-emerald-100 hover:from-emerald-100 hover:to-emerald-200 border-emerald-200",
-            iconBg: "bg-white",
-            iconColor: "text-emerald-600",
-            titleColor: "text-emerald-900",
-            descColor: "text-emerald-700",
+            hoverClass: "hover:border-emerald-300 hover:bg-emerald-50",
+            iconBg: "bg-emerald-100 text-emerald-600",
             path: "/signin",
         },
     ];
@@ -118,30 +109,25 @@ export function Home() {
         title: "मेनू कार्ड",
         description: "मेनू कार्ड पहा",
         icon: DocumentPlusIcon,
-        cardBg: "bg-gradient-to-br from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 border-purple-200",
-        iconBg: "bg-white",
-        iconColor: "text-pink-600",
-        titleColor: "text-pink-900",
-        descColor: "text-pink-700",
+        hoverClass: "hover:border-pink-300 hover:bg-pink-50",
+        iconBg: "bg-pink-100 text-pink-600",
         path: "/menu",
     };
 
     // Load both Dashboard counts and Calendar data on mount
-useEffect(() => {
-    // Initial load
-    dispatch(getDashboardCounts());
-    dispatch(getCalendar());
-    dispatch(getOrderStatus());
-
-    // Refresh dashboard data automatically
-    const interval = setInterval(() => {
+    useEffect(() => {
         dispatch(getDashboardCounts());
         dispatch(getCalendar());
         dispatch(getOrderStatus());
-    }, 10000); // 10 seconds
 
-    return () => clearInterval(interval);
-}, [dispatch]);
+        const interval = setInterval(() => {
+            dispatch(getDashboardCounts());
+            dispatch(getCalendar());
+            dispatch(getOrderStatus());
+        }, 10000);
+
+        return () => clearInterval(interval);
+    }, [dispatch]);
 
     const user = JSON.parse(localStorage.getItem("user"));
     const role = user?.role;
@@ -154,7 +140,7 @@ useEffect(() => {
 
     const actionsToShow = role === "Customer" ? [customerMenuCard] : quickActions;
 
-    // --- Upcoming Events Logic (Today & Tomorrow) ---
+    // --- Upcoming Events Logic ---
     const today = new Date();
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
@@ -165,236 +151,209 @@ useEffect(() => {
             d1.getFullYear() === d2.getFullYear();
     };
 
-    // Filter events based on status
-    const confirmedEvents = calendar?.filter((event) => event.extendedProps.status === "Confirmed") || [];
-    const inquiryEvents = calendar?.filter((event) => event.extendedProps.status === "Inquiry") || [];
-    const pendingEvents = calendar?.filter((event) => event.extendedProps.status === "Pending") || [];
+    const confirmedEvents = calendar?.filter((e) => e.extendedProps.status === "Confirmed") || [];
+    const inquiryEvents = calendar?.filter((e) => e.extendedProps.status === "Inquiry") || [];
+    const pendingEvents = calendar?.filter((e) => e.extendedProps.status === "Pending") || [];
 
-    // Filter specific timelines for notifications (Today and Tomorrow)
-    const todayConfirmed = confirmedEvents.filter((event) => isSameDay(new Date(event.start), today));
-    const tomorrowConfirmed = confirmedEvents.filter((event) => isSameDay(new Date(event.start), tomorrow));
+    const todayConfirmed = confirmedEvents.filter((e) => isSameDay(new Date(e.start), today));
+    const tomorrowConfirmed = confirmedEvents.filter((e) => isSameDay(new Date(e.start), tomorrow));
 
-    const todayPending = pendingEvents.filter((event) => isSameDay(new Date(event.start), today));
-    const tomorrowPending = pendingEvents.filter((event) => isSameDay(new Date(event.start), tomorrow));
+    const todayPending = pendingEvents.filter((e) => isSameDay(new Date(e.start), today));
+    const tomorrowPending = pendingEvents.filter((e) => isSameDay(new Date(e.start), tomorrow));
 
-    const todayInquiry = inquiryEvents.filter((event) => isSameDay(new Date(event.start), today));
-    const tomorrowInquiry = inquiryEvents.filter((event) => isSameDay(new Date(event.start), tomorrow));
+    const todayInquiry = inquiryEvents.filter((e) => isSameDay(new Date(e.start), today));
+    const tomorrowInquiry = inquiryEvents.filter((e) => isSameDay(new Date(e.start), tomorrow));
 
-    // Check if ANY notifications need to be shown
     const hasConfirmed = todayConfirmed.length > 0 || tomorrowConfirmed.length > 0;
     const hasPending = todayPending.length > 0 || tomorrowPending.length > 0;
     const hasInquiry = todayInquiry.length > 0 || tomorrowInquiry.length > 0;
     const showNotifications = role !== "Customer" && (hasConfirmed || hasInquiry || hasPending);
 
     return (
-        <div className="min-h-screen bg-indigo-50/40 p-6 md:p-10 font-sans relative overflow-hidden">
+        <div className="min-h-screen bg-slate-50 p-4 md:p-8 font-sans relative overflow-x-hidden">
 
-            {/* Colorful Ambient Background Blobs */}
-            <div className="absolute top-0 left-0 w-full h-[500px] bg-gradient-to-br from-blue-100/50 via-purple-100/30 to-pink-100/50 pointer-events-none -z-10"></div>
-            <div className="absolute top-[-10%] right-[-5%] w-[500px] h-[500px] rounded-full bg-gradient-to-br from-pink-300/30 to-purple-300/30 blur-[100px] pointer-events-none -z-10 animate-pulse"></div>
-            <div className="absolute bottom-[-10%] left-[-5%] w-[600px] h-[600px] rounded-full bg-gradient-to-tr from-cyan-300/20 to-blue-300/20 blur-[100px] pointer-events-none -z-10 animate-pulse" style={{ animationDelay: "2s" }}></div>
+            {/* Subtle Professional Background Accents */}
+            <div className="absolute top-0 left-0 w-full h-[400px] bg-gradient-to-b from-indigo-100/40 to-transparent pointer-events-none -z-10"></div>
 
-            <div className="max-w-7xl mx-auto space-y-8 relative z-10">
+            <div className="max-w-8xl mx-auto space-y-8 relative z-10">
 
-                {/* Header Section */}
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+                {/* --- HEADER SECTION --- */}
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
                     <div>
-                        <h1 className="text-3xl md:text-5xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-blue-800 to-purple-800 mb-3">
+                        <h1 className="text-2xl md:text-4xl font-extrabold text-slate-800 tracking-tight flex items-center gap-3">
+                            <ChartBarIcon className="w-8 h-8 text-indigo-600" />
                             डॅशबोर्ड
                         </h1>
-                        <p className="text-base text-slate-600 font-semibold">
-                            आपल्या केटरिंग व्यवसायाचा संपूर्ण आढावा
+                        <p className="text-sm md:text-base text-slate-500 font-medium mt-1">
+                            आपल्या केटरिंग व्यवसायाचा संपूर्ण आढावा व नियंत्रण
                         </p>
                     </div>
 
-                    {/* Header Action Buttons */}
                     <div className="flex flex-wrap items-center gap-3">
+                        {/* --- NEW OPTION: Monthly Report / Analytics --- */}
                         <button
-                            onClick={() => setIsCalendarOpen(true)}
-                            className="flex items-center gap-2 bg-white/90 backdrop-blur-md border border-indigo-200 px-5 py-2.5 rounded-full shadow-sm hover:shadow-md hover:bg-indigo-50 hover:-translate-y-0.5 transition-all"
+                            onClick={() => navigate("/analytics")} // तुम्हाला हव्या त्या मार्गावर (Route) सेट करा
+                            className="flex items-center gap-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white px-5 py-2.5 rounded-xl font-bold shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300"
                         >
-                            <CalendarDaysIcon className="w-5 h-5 text-indigo-600" />
-                            <span className="text-sm font-bold text-indigo-900">कॅलेंडर पहा</span>
+                            <ChartPieIcon className="w-5 h-5" />
+                            मासिक अहवाल
                         </button>
 
-                        <div className="flex items-center gap-2.5 bg-white/80 backdrop-blur-md border border-emerald-200 px-5 py-2.5 rounded-full shadow-sm">
-                            <span className="relative flex h-3 w-3">
+                        <button
+                            onClick={() => setIsCalendarOpen(true)}
+                            className="flex items-center gap-2 bg-indigo-50 border border-indigo-100 text-indigo-700 px-5 py-2.5 rounded-xl font-bold shadow-sm hover:bg-indigo-600 hover:text-white transition-colors duration-300"
+                        >
+                            <CalendarDaysIcon className="w-5 h-5" />
+                            कॅलेंडर पहा
+                        </button>
+
+                        <div className="hidden md:flex items-center gap-2 bg-emerald-50 border border-emerald-100 px-4 py-2.5 rounded-xl">
+                            <span className="relative flex h-2.5 w-2.5">
                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
                             </span>
-                            <span className="text-sm font-bold text-emerald-800">प्रणाली कार्यरत</span>
+                            <span className="text-sm font-bold text-emerald-700">Live</span>
                         </div>
                     </div>
                 </div>
 
-                {/* --- NOTIFICATION CENTER --- */}
+                {/* --- NOTIFICATION CENTER (Sleek Alerts) --- */}
                 {showNotifications && (
-                    <div className="flex flex-col gap-4 w-full animate-in fade-in slide-in-from-top-4 duration-500">
-
-                        {/* 1. Confirmed Events Banner (Emerald) */}
+                    <div className="flex flex-col gap-3 animate-in fade-in slide-in-from-top-4 duration-500">
+                        {/* Confirmed Alert */}
                         {hasConfirmed && (
-                            <div className="bg-gradient-to-r from-emerald-500 to-teal-500 rounded-[2rem] p-5 shadow-lg shadow-emerald-500/30 flex flex-col sm:flex-row sm:items-center gap-5 relative overflow-hidden">
-                                <div className="absolute top-0 right-0 w-48 h-48 bg-white opacity-10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/3"></div>
-
-                                <div className="p-3.5 bg-white/20 rounded-2xl shrink-0 relative z-10">
-                                    <span className="absolute top-0 right-0 -mt-1 -mr-1 flex h-4 w-4">
-                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
-                                        <span className="relative inline-flex rounded-full h-4 w-4 bg-white"></span>
-                                    </span>
-                                    <BellAlertIcon className="w-8 h-8 text-white" />
-                                </div>
-
-                                <div className="text-white relative z-10 flex-1">
-                                    <h3 className="text-xl font-black tracking-wide mb-2">
-                                        आगामी कार्यक्रम (Confirmed)
-                                    </h3>
-                                    <div className="flex flex-col gap-2 text-sm md:text-base font-semibold text-white/90">
-                                        {todayConfirmed.length > 0 && (
-                                            <p className="bg-white/20 px-3 py-2 rounded-xl inline-block w-fit">
-                                                आज <span className="font-black bg-white text-emerald-600 px-2 py-0.5 rounded-md shadow-sm mx-1.5">{todayConfirmed.length}</span> कार्यक्रम आहेत.
-                                            </p>
-                                        )}
-                                        {tomorrowConfirmed.length > 0 && (
-                                            <p className="bg-white/10 px-3 py-2 rounded-xl inline-block w-fit">
-                                                उद्या <span className="font-black bg-white text-emerald-600 px-2 py-0.5 rounded-md shadow-sm mx-1.5">{tomorrowConfirmed.length}</span> कार्यक्रम आहेत.
-                                            </p>
-                                        )}
+                            <div className="bg-emerald-50 border-l-4 border-emerald-500 p-4 rounded-r-xl shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                <div className="flex items-center gap-4">
+                                    <div className="p-2 bg-emerald-100 rounded-lg shrink-0">
+                                        <BellAlertIcon className="w-6 h-6 text-emerald-600" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-emerald-900 font-bold text-lg">आगामी कार्यक्रम (Confirmed)</h3>
+                                        <p className="text-emerald-700 text-sm font-medium">
+                                            {todayConfirmed.length > 0 && <span>आज <strong className="text-emerald-900 bg-emerald-200/50 px-1.5 py-0.5 rounded">{todayConfirmed.length}</strong> कार्यक्रम. </span>}
+                                            {tomorrowConfirmed.length > 0 && <span>उद्या <strong className="text-emerald-900 bg-emerald-200/50 px-1.5 py-0.5 rounded">{tomorrowConfirmed.length}</strong> कार्यक्रम.</span>}
+                                        </p>
                                     </div>
                                 </div>
-
-                                <button onClick={() => setIsCalendarOpen(true)} className="relative z-10 shrink-0 bg-white text-emerald-600 font-bold px-6 py-3 rounded-xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all active:scale-95">
-                                    कॅलेंडर पहा
-                                </button>
                             </div>
                         )}
 
-                        {/* 2. Pending Events Banner (Amber) */}
+                        {/* Pending Alert */}
                         {hasPending && (
-                            <div className="bg-gradient-to-r from-amber-500 to-orange-500 rounded-[2rem] p-5 shadow-lg shadow-amber-500/30 flex flex-col sm:flex-row sm:items-center gap-5 relative overflow-hidden">
-                                <div className="absolute top-0 right-0 w-48 h-48 bg-white opacity-10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/3"></div>
-
-                                <div className="p-3.5 bg-white/20 rounded-2xl shrink-0 relative z-10">
-                                    <BellAlertIcon className="w-8 h-8 text-white" />
-                                </div>
-
-                                <div className="text-white relative z-10 flex-1">
-                                    <h3 className="text-xl font-black tracking-wide mb-2">
-                                        प्रलंबित ऑर्डर (Pending)
-                                    </h3>
-                                    <div className="flex flex-col gap-2 text-sm md:text-base font-semibold text-white/90">
-                                        {/* URGENT MESSAGE FOR TODAY'S PENDING */}
-                                        {todayPending.length > 0 && (
-                                            <p className="bg-white/20 px-3 py-2 rounded-xl border border-white/40">
-                                                <span className="font-black bg-white text-amber-600 px-2 py-0.5 rounded-md shadow-sm mr-2">{todayPending.length}</span>
-                                                आजचे कार्यक्रम <span className="underline decoration-2 underline-offset-2">Pending</span> स्थितीत आहेत! कृपया तातडीने Confirmation घ्या.
-                                            </p>
-                                        )}
-                                        {/* MESSAGE FOR TOMORROW'S PENDING */}
-                                        {tomorrowPending.length > 0 && (
-                                            <p className="bg-white/10 px-3 py-2 rounded-xl">
-                                                <span className="font-black bg-white text-amber-600 px-2 py-0.5 rounded-md shadow-sm mr-2">{tomorrowPending.length}</span>
-                                                उद्याचे कार्यक्रम Pending आहेत. कृपया ऑर्डरची स्थिती Confirm करा.
-                                            </p>
-                                        )}
+                            <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r-xl shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                <div className="flex items-center gap-4">
+                                    <div className="p-2 bg-amber-100 rounded-lg shrink-0">
+                                        <ClockIcon className="w-6 h-6 text-amber-600" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-amber-900 font-bold text-lg">प्रलंबित ऑर्डर (Pending)</h3>
+                                        <p className="text-amber-700 text-sm font-medium">
+                                            {todayPending.length > 0 && <span>आजचे <strong className="text-red-600">{todayPending.length}</strong> कार्यक्रम Pending आहेत! </span>}
+                                            {tomorrowPending.length > 0 && <span>उद्याचे <strong className="text-amber-900">{tomorrowPending.length}</strong> कार्यक्रम Pending आहेत.</span>}
+                                        </p>
                                     </div>
                                 </div>
-                                <button onClick={() => setIsCalendarOpen(true)} className="relative z-10 shrink-0 bg-white text-amber-600 font-bold px-6 py-3 rounded-xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all active:scale-95">
-                                    कॅलेंडर पहा
-                                </button>
                             </div>
                         )}
 
-                        {/* 3. Inquiry Events Banner (Blue) */}
+                        {/* Inquiry Alert */}
                         {hasInquiry && (
-
-
-                            <div className="bg-gradient-to-r from-blue-500 to-indigo-500 rounded-[2rem] p-5 shadow-lg shadow-blue-500/30 flex flex-col sm:flex-row sm:items-center gap-5 relative overflow-hidden">
-
-
-                                <div className="absolute top-0 right-0 w-48 h-48 bg-white opacity-10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/3"></div>
-
-                                <div className="p-3.5 bg-white/20 rounded-2xl shrink-0 relative z-10">
-                                    <BellAlertIcon className="w-8 h-8 text-white" />
-                                </div>
-
-                                <div className="text-white relative z-10 flex-1">
-                                    <h3 className="text-xl font-black tracking-wide mb-2">
-                                        चौकशी प्रलंबित (Inquiry)
-                                    </h3>
-
-
-                                    <div className="flex flex-col gap-2 text-sm md:text-base font-semibold text-white/90">
-                                        {todayInquiry.length > 0 && (
-                                            <p className="bg-white/20 px-3 py-2 rounded-xl inline-block w-fit border border-white/40">
-                                                <span className="font-black bg-white text-blue-600 px-2 py-0.5 rounded-md shadow-sm mr-2">{todayInquiry.length}</span>
-                                                आजचे कार्यक्रम Inquiry स्थितीत आहेत. कृपया ग्राहकाशी संपर्क साधून Confirm करा.
-                                            </p>
-                                        )}
-                                        {tomorrowInquiry.length > 0 && (
-                                            <p className="bg-white/10 px-3 py-2 rounded-xl inline-block w-fit">
-                                                <span className="font-black bg-white text-blue-600 px-2 py-0.5 rounded-md shadow-sm mr-2">{tomorrowInquiry.length}</span>
-                                                उद्याचे कार्यक्रम Inquiry स्थितीत आहेत.
-                                            </p>
-                                        )}
+                            <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-xl shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                <div className="flex items-center gap-4">
+                                    <div className="p-2 bg-blue-100 rounded-lg shrink-0">
+                                        <QuestionMarkCircleIcon className="w-6 h-6 text-blue-600" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-blue-900 font-bold text-lg">चौकशी प्रलंबित (Inquiry)</h3>
+                                        <p className="text-blue-700 text-sm font-medium">
+                                            {todayInquiry.length > 0 && <span>आज <strong className="text-blue-900">{todayInquiry.length}</strong> Inquiries आहेत. </span>}
+                                            {tomorrowInquiry.length > 0 && <span>उद्या <strong className="text-blue-900">{tomorrowInquiry.length}</strong> Inquiries आहेत.</span>}
+                                        </p>
                                     </div>
                                 </div>
-                                <button onClick={() => setIsCalendarOpen(true)} className="relative z-10 shrink-0 bg-white text-blue-600 font-bold px-6 py-3 rounded-xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all active:scale-95">
-                                    कॅलेंडर पहा
-                                </button>
                             </div>
                         )}
-
                     </div>
                 )}
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+                {/* --- DASHBOARD STATS GRID --- */}
+                {role !== "Customer" && (
+                    <div className="space-y-6">
 
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-5">
-                        <p className="text-sm text-yellow-700 font-semibold">
-                            Pending Orders
-                        </p>
-                        <h2 className="text-3xl font-bold text-yellow-600">
-                            {orderStatus.Pending}
-                        </h2>
+                        {/* 1. Main KPI Cards */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                            {cards.map((card, index) => {
+                                const Icon = card.icon;
+                                return (
+                                    <div
+                                        key={index}
+                                        onClick={() => navigate(card.path)}
+                                        className={`group cursor-pointer rounded-2xl p-6 shadow-md hover:shadow-xl transition-all duration-300 relative overflow-hidden ${card.bgClass}`}
+                                    >
+                                        <div className="absolute -right-4 -top-4 w-32 h-32 bg-white opacity-10 rounded-full blur-2xl group-hover:scale-125 transition-transform"></div>
+                                        <div className="flex justify-between items-start mb-4 relative z-10">
+                                            <div className="p-3 rounded-xl bg-white/20 backdrop-blur-md text-white shadow-inner">
+                                                <Icon className="w-7 h-7" />
+                                            </div>
+                                            <ArrowUpRightIcon className="w-5 h-5 text-white/70 group-hover:text-white transition-colors" />
+                                        </div>
+                                        <div className="relative z-10">
+                                            <h3 className="text-4xl font-black text-white mb-1">
+                                                {card.value}
+                                            </h3>
+                                            <p className="text-sm font-semibold text-white/90">
+                                                {card.title}
+                                            </p>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {/* 2. Order Status Cards */}
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div className="bg-white border border-amber-100 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all flex items-center gap-4">
+                                <div className="p-3 bg-amber-50 text-amber-500 rounded-xl"><ClockIcon className="w-6 h-6" /></div>
+                                <div>
+                                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Pending</p>
+                                    <h2 className="text-2xl font-black text-slate-800">{orderStatus.Pending}</h2>
+                                </div>
+                            </div>
+
+                            <div className="bg-white border border-emerald-100 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all flex items-center gap-4">
+                                <div className="p-3 bg-emerald-50 text-emerald-500 rounded-xl"><CheckBadgeIcon className="w-6 h-6" /></div>
+                                <div>
+                                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Confirmed</p>
+                                    <h2 className="text-2xl font-black text-slate-800">{orderStatus.Confirmed}</h2>
+                                </div>
+                            </div>
+
+                            <div className="bg-white border border-blue-100 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all flex items-center gap-4">
+                                <div className="p-3 bg-blue-50 text-blue-500 rounded-xl"><QuestionMarkCircleIcon className="w-6 h-6" /></div>
+                                <div>
+                                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Inquiry</p>
+                                    <h2 className="text-2xl font-black text-slate-800">{orderStatus.Inquiry}</h2>
+                                </div>
+                            </div>
+
+                            <div className="bg-white border border-rose-100 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all flex items-center gap-4">
+                                <div className="p-3 bg-rose-50 text-rose-500 rounded-xl"><XCircleIcon className="w-6 h-6" /></div>
+                                <div>
+                                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Cancelled</p>
+                                    <h2 className="text-2xl font-black text-slate-800">{orderStatus.Cancel}</h2>
+                                </div>
+                            </div>
+                        </div>
                     </div>
+                )}
 
-                    <div className="bg-green-50 border border-green-200 rounded-xl p-5">
-                        <p className="text-sm text-green-700 font-semibold">
-                            Confirmed Orders
-                        </p>
-                        <h2 className="text-3xl font-bold text-green-600">
-                            {orderStatus.Confirmed}
-                        </h2>
-                    </div>
-
-                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-5">
-                        <p className="text-sm text-blue-700 font-semibold">
-                            Inquiry Orders
-                        </p>
-                        <h2 className="text-3xl font-bold text-blue-600">
-                            {orderStatus.Inquiry}
-                        </h2>
-                    </div>
-
-                    <div className="bg-red-50 border border-red-200 rounded-xl p-5">
-                        <p className="text-sm text-red-700 font-semibold">
-                            Cancelled Orders
-                        </p>
-                        <h2 className="text-3xl font-bold text-red-600">
-                            {orderStatus.Cancel}
-                        </h2>
-                    </div>
-
-                </div>
-
-
-                {/* Quick Actions List */}
+                {/* --- QUICK ACTIONS --- */}
                 <div>
-                    <h2 className="text-xl font-bold mb-5 text-slate-800 flex items-center gap-2">
-                        झटपट कृती
+                    <h2 className="text-lg font-bold mb-4 text-slate-800 flex items-center gap-2">
+                        झटपट कृती (Quick Actions)
                     </h2>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 md:gap-5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
                         {actionsToShow.map((action, index) => {
                             const ActionIcon = action.icon;
                             return (
@@ -404,21 +363,21 @@ useEffect(() => {
                                         if (action.onClick) action.onClick();
                                         else navigate(action.path);
                                     }}
-                                    className={`group relative flex flex-col items-start gap-4 p-5 rounded-3xl border shadow-sm hover:shadow-md transition-all duration-300 text-left hover:-translate-y-1 ${action.cardBg}`}
+                                    className={`group relative flex flex-col items-start gap-4 p-5 bg-white rounded-2xl border border-slate-200 shadow-sm transition-all duration-300 text-left cursor-pointer ${action.hoverClass}`}
                                 >
-                                    <div className={`p-3 rounded-2xl shadow-sm transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3 ${action.iconBg}`}>
-                                        <ActionIcon className={`w-7 h-7 ${action.iconColor}`} />
+                                    <div className={`p-3 rounded-xl shadow-sm transition-transform duration-300 group-hover:-translate-y-1 ${action.iconBg}`}>
+                                        <ActionIcon className="w-6 h-6" />
                                     </div>
                                     <div>
-                                        <h4 className={`text-base font-extrabold mb-1 ${action.titleColor}`}>
+                                        <h4 className="text-sm font-bold text-slate-800 mb-1">
                                             {action.title}
                                         </h4>
-                                        <p className={`text-sm font-semibold leading-relaxed ${action.descColor}`}>
+                                        <p className="text-xs font-medium text-slate-500 leading-relaxed">
                                             {action.description}
                                         </p>
 
                                         {action.title === "नवीन ऑर्डर" && counts.unreadOrders > 0 && (
-                                            <span className="absolute top-4 right-4 bg-red-600 text-white rounded-full px-2.5 py-0.5 text-xs font-bold shadow-sm animate-pulse">
+                                            <span className="absolute top-4 right-4 bg-red-500 text-white rounded-full px-2 py-0.5 text-[10px] font-bold shadow-sm animate-pulse">
                                                 {counts.unreadOrders} New
                                             </span>
                                         )}
@@ -429,45 +388,9 @@ useEffect(() => {
                     </div>
                 </div>
 
-                {/* Key Metrics (Stats) */}
-                {role !== "Customer" && (
-                    <div>
-                        <h2 className="text-xl font-bold mb-5 text-slate-800 flex items-center gap-2">
-                            मुख्य आकडेवारी
-                        </h2>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            {cards.map((card, index) => {
-                                const Icon = card.icon;
-                                return (
-                                    <div
-                                        key={index}
-                                        onClick={() => navigate(card.path)}
-                                        className={`group cursor-pointer rounded-3xl p-6 md:p-8 shadow-lg hover:shadow-xl transition-all duration-300 flex flex-col hover:-translate-y-1.5 ${card.bgClass}`}
-                                    >
-                                        <div className="flex justify-between items-start mb-8">
-                                            <div className="p-3.5 rounded-2xl bg-white/20 backdrop-blur-sm border border-white/30 text-white shadow-inner">
-                                                <Icon className="w-8 h-8" />
-                                            </div>
-                                            <div className="bg-white/10 backdrop-blur-sm border border-white/20 p-2 rounded-full group-hover:bg-white/30 transition-colors">
-                                                <ArrowUpRightIcon className="w-5 h-5 text-white" />
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <h3 className="text-4xl md:text-5xl font-black tracking-tight mb-2 text-white drop-shadow-md">
-                                                {card.value}
-                                            </h3>
-                                            <p className="text-lg font-bold text-white/90">
-                                                {card.title}
-                                            </p>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-                )}
-
-                <p className="text-center text-gray-400">@ 2026 Developed by Deenova Digital</p>
+                <div className="pt-8 pb-4 text-center">
+                    <p className="text-sm font-medium text-slate-400">@ 2026 Developed by Deenova Digital</p>
+                </div>
 
             </div>
 
