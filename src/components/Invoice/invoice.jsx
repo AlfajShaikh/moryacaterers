@@ -19,6 +19,8 @@ import {
 } from "@heroicons/react/24/outline";
 import { BillingHistory } from "./BillingHistory/billingHistory";
 import { QRCodeSVG } from "qrcode.react";
+import logo from "../../assets/images/morayaorignal.png"
+
 
 export function Invoice() {
     const dispatch = useDispatch();
@@ -546,11 +548,11 @@ export function Invoice() {
                                                                                         <td className="py-2.5 px-4 text-right">
                                                                                             <div className="flex items-center justify-end gap-2">
                                                                                                 <span className="font-bold text-slate-400 text-sm">₹</span>
-                                                                                                <input 
-                                                                                                    type="number" 
-                                                                                                    value={item.price || 0} 
-                                                                                                    onChange={(e) => handlePriceChange(shiftIndex, catIndex, index, e.target.value)} 
-                                                                                                    className="w-20 px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-md text-right font-bold text-slate-800 text-sm outline-none focus:bg-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all" 
+                                                                                                <input
+                                                                                                    type="number"
+                                                                                                    value={item.price || 0}
+                                                                                                    onChange={(e) => handlePriceChange(shiftIndex, catIndex, index, e.target.value)}
+                                                                                                    className="w-20 px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-md text-right font-bold text-slate-800 text-sm outline-none focus:bg-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
                                                                                                 />
                                                                                             </div>
                                                                                         </td>
@@ -569,7 +571,7 @@ export function Invoice() {
 
                                         {/* 🧮 Enhanced & Redesigned Calculation Module */}
                                         <div className="bg-gradient-to-br from-indigo-50 to-slate-50 border border-indigo-100 p-6 md:p-8 rounded-3xl shadow-sm">
-                                            
+
                                             {/* Math Row */}
                                             <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm mb-8">
                                                 <div className="text-center px-4">
@@ -620,30 +622,30 @@ export function Invoice() {
 
                                             {/* Final Summary & Actions */}
                                             <div className="flex flex-col md:flex-row justify-between items-end gap-8">
-                                                
+
                                                 {/* Summary Card replaces the "..." placeholder */}
                                                 <div className="bg-white border border-slate-200 rounded-2xl p-6 w-full max-w-sm shadow-md">
                                                     <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 border-b border-slate-100 pb-2">Final Summary</h4>
-                                                    
+
                                                     <div className="flex justify-between items-center mb-2 text-sm">
                                                         <span className="font-bold text-slate-500">Grand Total</span>
                                                         <span className="font-black text-slate-700">₹{Number(editableInvoice.grandTotal || 0).toLocaleString('en-IN')}</span>
                                                     </div>
-                                                    
+
                                                     {Number(editableInvoice.discount) > 0 && (
                                                         <div className="flex justify-between items-center mb-2 text-sm">
                                                             <span className="font-bold text-rose-500">Discount</span>
                                                             <span className="font-black text-rose-600">- ₹{Number(editableInvoice.discount).toLocaleString('en-IN')}</span>
                                                         </div>
                                                     )}
-                                                    
+
                                                     {Number(editableInvoice.advancePayment) > 0 && (
                                                         <div className="flex justify-between items-center mb-4 text-sm">
                                                             <span className="font-bold text-emerald-600">Advance Paid</span>
                                                             <span className="font-black text-emerald-700">- ₹{Number(editableInvoice.advancePayment).toLocaleString('en-IN')}</span>
                                                         </div>
                                                     )}
-                                                    
+
                                                     <div className="flex justify-between items-center pt-4 border-t border-dashed border-slate-200">
                                                         <span className="text-lg font-black text-slate-900 uppercase">Balance</span>
                                                         <span className="text-2xl font-black text-indigo-600">
@@ -671,7 +673,7 @@ export function Invoice() {
                                                         className="flex flex-col items-center justify-center gap-2 bg-gradient-to-b from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white px-6 py-4 rounded-2xl font-black transition-all active:scale-95 shadow-lg shadow-emerald-500/30 h-full min-h-[140px]"
                                                     >
                                                         <CheckCircleIcon className="w-10 h-10" />
-                                                        <span>Payment<br/>Received</span>
+                                                        <span>Payment<br />Received</span>
                                                     </button>
                                                 </div>
                                             </div>
@@ -688,7 +690,7 @@ export function Invoice() {
             {editableInvoice && (
                 <div className="print-layout hidden print:block bg-white text-black font-sans">
                     <div className="text-center border-b-[3px] border-gray-800 pb-4 mb-6 mt-4 avoid-break">
-                        <h1 className="text-4xl font-black uppercase text-gray-900 tracking-wider">Morya Caterers</h1>
+                        <h1 className="text-4xl font-black uppercase text-gray-900 tracking-wider"><img src={logo} alt="" className="h-28" /></h1>
                         <p className="text-sm font-bold text-gray-600 uppercase tracking-widest mt-1">Tax Invoice / Bill</p>
                     </div>
 

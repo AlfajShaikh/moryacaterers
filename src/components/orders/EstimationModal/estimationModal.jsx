@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { XMarkIcon, PrinterIcon, DocumentTextIcon, SparklesIcon } from "@heroicons/react/24/outline";
 import React from "react";
-import logo from "../../../assets/images/logomoryaremovebg.png";
+import logo from "../../../assets/images/morayaorignal.png";
 
 export function EstimationModal({ order, onClose }) {
     const [withPrice, setWithPrice] = useState(true);
@@ -128,12 +128,12 @@ export function EstimationModal({ order, onClose }) {
                         <div className="text-center border-b-[3px] border-slate-800 pb-6 mb-8 avoid-break flex justify-between items-center">
 
                             <div>
-                                <img src={logo} alt="Morya Caterers" className="h-24 m-auto" />
+                                <img src={logo} alt="Morya Caterers" className="h-28 m-auto" />
                             </div>
                             <div>
                                 <p className="text-slate-500 text-sm mt-2 font-semibold text-left">
                                     टिळक स्मारक हॉल टिळक चौक सांगली <br />
-                                    महाराष्ट्र ४१६४१६ | संपर्क: +91 7887777093
+                                    महाराष्ट्र ४१६४१६ <br /> संपर्क: +91 7887777093
                                 </p>
                             </div>
 

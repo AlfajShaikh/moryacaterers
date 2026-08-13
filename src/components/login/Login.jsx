@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { loginUser } from "./loginSlice";
-import logo from "../../assets/images/logomorya.jpeg";
+import logo from "../../assets/images/morayaorignal.png";
 import { EnvelopeIcon, LockClosedIcon, ArrowRightOnRectangleIcon, EyeSlashIcon, EyeIcon } from "@heroicons/react/24/outline";
 
 export default function Login({ setIsLoggedIn }) {

@@ -6,7 +6,7 @@ import {
     ChevronDownIcon,
 } from "@heroicons/react/24/outline";
 import { useNavigate } from "react-router-dom";
-import logo from "../../assets/images/logomoryaremovebg.png"
+import logo from "../../assets/images/morayaorignal.png"
 
 export default function Header({ setIsLoggedIn }) {
     const [open, setOpen] = useState(false);
