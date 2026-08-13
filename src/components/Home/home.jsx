@@ -13,7 +13,7 @@ import {
     QuestionMarkCircleIcon,
     XCircleIcon,
     ChartBarIcon,
-    ChartPieIcon // <-- नवीन आयकॉन (Graphical Report साठी)
+    ChartPieIcon 
 } from "@heroicons/react/24/outline";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -25,11 +25,52 @@ export function Home() {
     const navigate = useNavigate();
     const dispatch = useDispatch();
 
-    // --- Modal State ---
+    // --- Modal & Loading State ---
     const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+    const [isInitialLoad, setIsInitialLoad] = useState(true); // <-- नवीन Loading State
 
-    // Get both counts and calendar from Redux
+    // Get counts, calendar, and orderStatus from Redux
     const { counts, calendar, orderStatus } = useSelector((state) => state.dashboard);
+
+    const user = JSON.parse(localStorage.getItem("user"));
+    const role = user?.role;
+
+    // Customer Redirection
+    useEffect(() => {
+        if (role === "Customer") {
+            navigate("/menu");
+        }
+    }, [role, navigate]);
+
+    // Load Dashboard Data (With Initial Buffering Logic)
+    useEffect(() => {
+        const fetchInitialData = async () => {
+            try {
+                // पहिल्यांदा डेटा येईपर्यंत वाट पाहा
+                await Promise.all([
+                    dispatch(getDashboardCounts()),
+                    dispatch(getCalendar()),
+                    dispatch(getOrderStatus())
+                ]);
+            } catch (error) {
+                console.error("Failed to fetch dashboard data:", error);
+            } finally {
+                // डेटा आल्यावर लोडिंग बंद करा
+                setIsInitialLoad(false); 
+            }
+        };
+
+        fetchInitialData();
+
+        // बॅकग्राउंडमध्ये दर १० सेकंदांनी डेटा रिफ्रेश करा (येथे लोडिंग दिसणार नाही)
+        const interval = setInterval(() => {
+            dispatch(getDashboardCounts());
+            dispatch(getCalendar());
+            dispatch(getOrderStatus());
+        }, 10000);
+
+        return () => clearInterval(interval);
+    }, [dispatch]);
 
     const handleOrderClick = async () => {
         await dispatch(markRead());
@@ -40,21 +81,21 @@ export function Home() {
     const cards = [
         {
             title: "मेनू पदार्थ",
-            value: counts.menuItemCount || 0,
+            value: counts?.menuItemCount || 0,
             icon: CakeIcon,
             bgClass: "bg-gradient-to-br from-rose-500 to-pink-600 shadow-pink-500/20",
             path: "/menu",
         },
         {
             title: "एकूण ऑर्डर्स",
-            value: counts.orderCount || 0,
+            value: counts?.orderCount || 0,
             icon: ClipboardDocumentListIcon,
             bgClass: "bg-gradient-to-br from-blue-500 to-indigo-600 shadow-blue-500/20",
             path: "",
         },
         {
             title: "आगामी कार्यक्रम",
-            value: counts.upcomingEventCount || 0,
+            value: counts?.upcomingEventCount || 0,
             icon: CalendarDaysIcon,
             bgClass: "bg-gradient-to-br from-violet-500 to-purple-600 shadow-purple-500/20",
             path: "/events",
@@ -114,30 +155,6 @@ export function Home() {
         path: "/menu",
     };
 
-    // Load both Dashboard counts and Calendar data on mount
-    useEffect(() => {
-        dispatch(getDashboardCounts());
-        dispatch(getCalendar());
-        dispatch(getOrderStatus());
-
-        const interval = setInterval(() => {
-            dispatch(getDashboardCounts());
-            dispatch(getCalendar());
-            dispatch(getOrderStatus());
-        }, 10000);
-
-        return () => clearInterval(interval);
-    }, [dispatch]);
-
-    const user = JSON.parse(localStorage.getItem("user"));
-    const role = user?.role;
-
-    useEffect(() => {
-        if (role === "Customer") {
-            navigate("/menu");
-        }
-    }, [role, navigate]);
-
     const actionsToShow = role === "Customer" ? [customerMenuCard] : quickActions;
 
     // --- Upcoming Events Logic ---
@@ -151,9 +168,9 @@ export function Home() {
             d1.getFullYear() === d2.getFullYear();
     };
 
-    const confirmedEvents = calendar?.filter((e) => e.extendedProps.status === "Confirmed") || [];
-    const inquiryEvents = calendar?.filter((e) => e.extendedProps.status === "Inquiry") || [];
-    const pendingEvents = calendar?.filter((e) => e.extendedProps.status === "Pending") || [];
+    const confirmedEvents = calendar?.filter((e) => e.extendedProps?.status === "Confirmed") || [];
+    const inquiryEvents = calendar?.filter((e) => e.extendedProps?.status === "Inquiry") || [];
+    const pendingEvents = calendar?.filter((e) => e.extendedProps?.status === "Pending") || [];
 
     const todayConfirmed = confirmedEvents.filter((e) => isSameDay(new Date(e.start), today));
     const tomorrowConfirmed = confirmedEvents.filter((e) => isSameDay(new Date(e.start), tomorrow));
@@ -169,6 +186,27 @@ export function Home() {
     const hasInquiry = todayInquiry.length > 0 || tomorrowInquiry.length > 0;
     const showNotifications = role !== "Customer" && (hasConfirmed || hasInquiry || hasPending);
 
+    // --- Loading Screen UI ---
+    if (isInitialLoad) {
+        return (
+            <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center font-sans relative overflow-hidden">
+                {/* Background Accents */}
+                <div className="absolute top-0 left-0 w-full h-[400px] bg-gradient-to-b from-indigo-100/40 to-transparent pointer-events-none -z-10"></div>
+                
+                {/* Beautiful Pulsing Spinner */}
+                <span className="relative flex h-20 w-20 mb-6">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-60"></span>
+                    <span className="relative inline-flex rounded-full h-20 w-20 bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/30">
+                        <ChartBarIcon className="w-10 h-10 text-white animate-pulse" />
+                    </span>
+                </span>
+                
+                <h2 className="text-2xl font-black text-slate-800 tracking-tight mb-2">डॅशबोर्ड लोड होत आहे...</h2>
+                <p className="text-slate-500 font-medium text-sm">कृपया प्रतीक्षा करा, माहिती मिळवली जात आहे.</p>
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen bg-slate-50 p-4 md:p-8 font-sans relative overflow-x-hidden">
 
@@ -178,7 +216,7 @@ export function Home() {
             <div className="max-w-8xl mx-auto space-y-8 relative z-10">
 
                 {/* --- HEADER SECTION --- */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-100 animate-in fade-in slide-in-from-top-4 duration-500">
                     <div>
                         <h1 className="text-2xl md:text-4xl font-extrabold text-slate-800 tracking-tight flex items-center gap-3">
                             <ChartBarIcon className="w-8 h-8 text-indigo-600" />
@@ -190,9 +228,8 @@ export function Home() {
                     </div>
 
                     <div className="flex flex-wrap items-center gap-3">
-                        {/* --- NEW OPTION: Monthly Report / Analytics --- */}
                         <button
-                            onClick={() => navigate("/analytics")} // तुम्हाला हव्या त्या मार्गावर (Route) सेट करा
+                            onClick={() => navigate("/analytics")}
                             className="flex items-center gap-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white px-5 py-2.5 rounded-xl font-bold shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300"
                         >
                             <ChartPieIcon className="w-5 h-5" />
@@ -206,7 +243,7 @@ export function Home() {
                             <CalendarDaysIcon className="w-5 h-5" />
                             कॅलेंडर पहा
                         </button>
-
+                        
                         <div className="hidden md:flex items-center gap-2 bg-emerald-50 border border-emerald-100 px-4 py-2.5 rounded-xl">
                             <span className="relative flex h-2.5 w-2.5">
                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -217,9 +254,9 @@ export function Home() {
                     </div>
                 </div>
 
-                {/* --- NOTIFICATION CENTER (Sleek Alerts) --- */}
+                {/* --- NOTIFICATION CENTER --- */}
                 {showNotifications && (
-                    <div className="flex flex-col gap-3 animate-in fade-in slide-in-from-top-4 duration-500">
+                    <div className="flex flex-col gap-3 animate-in fade-in duration-500 delay-100">
                         {/* Confirmed Alert */}
                         {hasConfirmed && (
                             <div className="bg-emerald-50 border-l-4 border-emerald-500 p-4 rounded-r-xl shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -278,8 +315,7 @@ export function Home() {
 
                 {/* --- DASHBOARD STATS GRID --- */}
                 {role !== "Customer" && (
-                    <div className="space-y-6">
-
+                    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200">
                         {/* 1. Main KPI Cards */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                             {cards.map((card, index) => {
@@ -316,7 +352,7 @@ export function Home() {
                                 <div className="p-3 bg-amber-50 text-amber-500 rounded-xl"><ClockIcon className="w-6 h-6" /></div>
                                 <div>
                                     <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Pending</p>
-                                    <h2 className="text-2xl font-black text-slate-800">{orderStatus.Pending}</h2>
+                                    <h2 className="text-2xl font-black text-slate-800">{orderStatus?.Pending || 0}</h2>
                                 </div>
                             </div>
 
@@ -324,7 +360,7 @@ export function Home() {
                                 <div className="p-3 bg-emerald-50 text-emerald-500 rounded-xl"><CheckBadgeIcon className="w-6 h-6" /></div>
                                 <div>
                                     <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Confirmed</p>
-                                    <h2 className="text-2xl font-black text-slate-800">{orderStatus.Confirmed}</h2>
+                                    <h2 className="text-2xl font-black text-slate-800">{orderStatus?.Confirmed || 0}</h2>
                                 </div>
                             </div>
 
@@ -332,7 +368,7 @@ export function Home() {
                                 <div className="p-3 bg-blue-50 text-blue-500 rounded-xl"><QuestionMarkCircleIcon className="w-6 h-6" /></div>
                                 <div>
                                     <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Inquiry</p>
-                                    <h2 className="text-2xl font-black text-slate-800">{orderStatus.Inquiry}</h2>
+                                    <h2 className="text-2xl font-black text-slate-800">{orderStatus?.Inquiry || 0}</h2>
                                 </div>
                             </div>
 
@@ -340,7 +376,7 @@ export function Home() {
                                 <div className="p-3 bg-rose-50 text-rose-500 rounded-xl"><XCircleIcon className="w-6 h-6" /></div>
                                 <div>
                                     <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Cancelled</p>
-                                    <h2 className="text-2xl font-black text-slate-800">{orderStatus.Cancel}</h2>
+                                    <h2 className="text-2xl font-black text-slate-800">{orderStatus?.Cancel || 0}</h2>
                                 </div>
                             </div>
                         </div>
@@ -348,7 +384,7 @@ export function Home() {
                 )}
 
                 {/* --- QUICK ACTIONS --- */}
-                <div>
+                <div className="animate-in fade-in duration-500 delay-300">
                     <h2 className="text-lg font-bold mb-4 text-slate-800 flex items-center gap-2">
                         झटपट कृती (Quick Actions)
                     </h2>
@@ -376,7 +412,7 @@ export function Home() {
                                             {action.description}
                                         </p>
 
-                                        {action.title === "नवीन ऑर्डर" && counts.unreadOrders > 0 && (
+                                        {action.title === "नवीन ऑर्डर" && counts?.unreadOrders > 0 && (
                                             <span className="absolute top-4 right-4 bg-red-500 text-white rounded-full px-2 py-0.5 text-[10px] font-bold shadow-sm animate-pulse">
                                                 {counts.unreadOrders} New
                                             </span>
