@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom"; // --- नवीन: नेव्हिगेशनसाठी
 import { deleteOrder, getAllOrders, removeOrderItem, updateOrder } from "./ordersSlice";
 import {
     UserIcon,
@@ -18,20 +19,28 @@ import {
     TrashIcon,
     CheckCircleIcon,
     XCircleIcon,
-    PlusCircleIcon
+    PlusCircleIcon,
+    ArrowLeftIcon, // --- नवीन: Back बटणसाठी आयकॉन
+    ReceiptPercentIcon // --- नवीन: Invoice बटणसाठी आयकॉन
 } from "@heroicons/react/24/outline";
-import { ShoppingBagIcon, CurrencyRupeeIcon, CheckCircleIcon as CheckCircleSolid } from "@heroicons/react/24/solid";
+import {
+    ShoppingBagIcon,
+    CurrencyRupeeIcon,
+    CheckCircleIcon as CheckCircleSolid,
+    ChatBubbleLeftRightIcon 
+} from "@heroicons/react/24/solid";
 import { EstimationModal } from "./EstimationModal/estimationModal";
 
 export function Orders() {
     const dispatch = useDispatch();
+    const navigate = useNavigate(); // --- नवीन: राऊटर नेव्हिगेशन हुक
     const { orders, loading } = useSelector((state) => state.orders);
 
     // UI States
     const [expandedOrders, setExpandedOrders] = useState({});
     const [localOrders, setLocalOrders] = useState([]);
     const [estimationOrder, setEstimationOrder] = useState(null);
-    
+
     // Add Item States
     const [showAddItem, setShowAddItem] = useState({});
     const [newItemName, setNewItemName] = useState({});
@@ -64,7 +73,6 @@ export function Orders() {
         let total = 0;
         order.shifts?.forEach((shift) => {
             shift.categories?.forEach((category) => {
-                // जर कॅटेगरीची प्राईस मॅन्युअली सेट केली असेल तर ती वापरा, नाहीतर आतील आयटम्सची बेरीज करा
                 if (category.categoryPrice !== undefined && category.categoryPrice !== "") {
                     total += Number(category.categoryPrice);
                 } else {
@@ -92,18 +100,17 @@ export function Orders() {
         );
     };
 
-    // नवीन: कॅटेगरीची एकूण रक्कम (Category Price) बदलण्यासाठी
     const handleCategoryPriceChange = (orderId, shiftIndex, categoryIndex, newPrice) => {
         setLocalOrders((prevOrders) =>
             prevOrders.map((order) => {
                 if (order._id !== orderId) return order;
                 const updatedOrder = JSON.parse(JSON.stringify(order));
-                
+
                 updatedOrder.shifts[shiftIndex].categories[categoryIndex].categoryPrice = newPrice;
-                
+
                 const perPlatePrice = calculatePerPlatePrice(updatedOrder);
                 updatedOrder.grandTotal = Number(updatedOrder.guestCount || 0) * perPlatePrice;
-                
+
                 return updatedOrder;
             })
         );
@@ -121,11 +128,11 @@ export function Orders() {
             prevOrders.map((order) => {
                 if (order._id !== orderId) return order;
                 const updatedOrder = JSON.parse(JSON.stringify(order));
-                
+
                 if (!updatedOrder.shifts[shiftIndex].categories) {
                     updatedOrder.shifts[shiftIndex].categories = [];
                 }
-                
+
                 updatedOrder.shifts[shiftIndex].categories.push({
                     category: name,
                     selectedItems: [],
@@ -141,17 +148,17 @@ export function Orders() {
 
     const handleRemoveCategory = (orderId, shiftIndex, categoryIndex) => {
         if (!window.confirm("तुम्हाला नक्की ही संपूर्ण कॅटेगरी आणि त्यातील पदार्थ डिलीट करायचे आहेत का?")) return;
-        
+
         setLocalOrders((prevOrders) =>
             prevOrders.map((order) => {
                 if (order._id !== orderId) return order;
                 const updatedOrder = JSON.parse(JSON.stringify(order));
-                
+
                 updatedOrder.shifts[shiftIndex].categories.splice(categoryIndex, 1);
-                
+
                 const perPlatePrice = calculatePerPlatePrice(updatedOrder);
                 updatedOrder.grandTotal = Number(updatedOrder.guestCount || 0) * perPlatePrice;
-                
+
                 return updatedOrder;
             })
         );
@@ -171,8 +178,7 @@ export function Orders() {
                 if (order._id !== orderId) return order;
                 const updatedOrder = JSON.parse(JSON.stringify(order));
                 updatedOrder.shifts[shiftIndex].categories[categoryIndex].selectedItems.push({ itemName: name, price });
-                
-                // आयटम ऍड केल्यावर कॅटेगरीची एकूण रक्कम पुन्हा मोजा
+
                 const newCatSum = updatedOrder.shifts[shiftIndex].categories[categoryIndex].selectedItems.reduce((sum, item) => sum + Number(item.price || 0), 0);
                 updatedOrder.shifts[shiftIndex].categories[categoryIndex].categoryPrice = newCatSum;
 
@@ -192,8 +198,7 @@ export function Orders() {
                 if (order._id !== orderId) return order;
                 const updatedOrder = JSON.parse(JSON.stringify(order));
                 updatedOrder.shifts[shiftIndex].categories[categoryIndex].selectedItems[itemIndex].price = newPrice;
-                
-                // जेव्हा आतील पदार्थाची किंमत बदलते, तेव्हा कॅटेगरीची किंमत आपोआप अपडेट करा
+
                 const newCatSum = updatedOrder.shifts[shiftIndex].categories[categoryIndex].selectedItems.reduce((sum, item) => sum + Number(item.price || 0), 0);
                 updatedOrder.shifts[shiftIndex].categories[categoryIndex].categoryPrice = newCatSum;
 
@@ -239,6 +244,14 @@ export function Orders() {
         }
     };
 
+    const handleWhatsAppMessage = (e, order) => {
+        e.stopPropagation();
+        if (!order.mobile) return;
+        const message = `नमस्कार ${order.customerName},\nतुमची ${order.eventType || 'ऑर्डर'} ची नोंदणी झाली आहे. \nदिनांक: ${new Date(order.eventDate).toLocaleDateString("mr-IN")}\nएकूण रक्कम: ₹${order.grandTotal}\nधन्यवाद!\n- Morya Caterers`;
+        const url = `https://wa.me/91${order.mobile}?text=${encodeURIComponent(message)}`;
+        window.open(url, "_blank");
+    };
+
     // Derived Data & Filtering
     const filteredAndSortedOrders = [...localOrders]
         .filter((order) => {
@@ -264,6 +277,17 @@ export function Orders() {
         }
     };
 
+    const getSmartDateBadge = (dateString) => {
+        const orderDate = new Date(dateString).setHours(0, 0, 0, 0);
+        const today = new Date().setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(new Date(today).getDate() + 1);
+
+        if (orderDate === today) return <span className="bg-rose-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded animate-pulse">🔥 आज</span>;
+        if (orderDate === tomorrow.setHours(0, 0, 0, 0)) return <span className="bg-amber-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded">⏰ उद्या</span>;
+        return null;
+    };
+
     if (loading) {
         return (
             <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50">
@@ -285,7 +309,7 @@ export function Orders() {
             <div className="relative z-10 w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
 
                 {/* Header Section */}
-                <div className="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4">
+                <div className="mb-4 flex flex-col md:flex-row md:items-end justify-between gap-4">
                     <div>
                         <h1 className="text-3xl md:text-4xl font-black tracking-tight text-slate-900 mb-1">
                             ऑर्डर्स <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">व्यवस्थापन</span>
@@ -294,7 +318,6 @@ export function Orders() {
                             ऑर्डर व्यवस्थापन, किमतींचे संपादन आणि अपडेट्स एकाच ठिकाणी.
                         </p>
                     </div>
-                    {/* Orders Summary Badge */}
                     <div className="flex items-center gap-3 bg-white/90 backdrop-blur-md border border-slate-200 px-5 py-3 rounded-2xl shadow-sm hover:shadow-md transition-shadow w-max">
                         <div className="p-2 bg-indigo-100 text-indigo-600 rounded-xl"><ShoppingBagIcon className="w-6 h-6" /></div>
                         <div>
@@ -302,6 +325,22 @@ export function Orders() {
                             <p className="text-xl font-black text-slate-800 leading-none">{filteredAndSortedOrders.length}</p>
                         </div>
                     </div>
+                </div>
+
+                {/* --- नवीन: Action Navigation Buttons --- */}
+                <div className="flex items-center gap-3 mb-6">
+                    <button 
+                        onClick={() => navigate(-1)}
+                        className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 hover:text-indigo-600 font-bold text-sm shadow-sm transition-all"
+                    >
+                        <ArrowLeftIcon className="w-4 h-4" /> मागे जा (Back)
+                    </button>
+                    <button 
+                        onClick={() => navigate("/invoice")}
+                        className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 font-bold text-sm shadow-sm shadow-indigo-200 transition-all"
+                    >
+                        <ReceiptPercentIcon className="w-4 h-4" /> इनव्हॉइस पेज (Invoice)
+                    </button>
                 </div>
 
                 {/* Filters Section */}
@@ -332,6 +371,14 @@ export function Orders() {
                     </div>
                 </div>
 
+                {filteredAndSortedOrders.length === 0 && (
+                    <div className="bg-white border border-slate-200 border-dashed rounded-2xl flex flex-col items-center justify-center py-20">
+                        <ShoppingBagIcon className="w-16 h-16 text-slate-300 mb-4" />
+                        <h3 className="text-xl font-bold text-slate-700">कोणतीही ऑर्डर सापडली नाही</h3>
+                        <p className="text-sm text-slate-500 mt-1">तुमचा सर्च किंवा फिल्टर बदलून पहा.</p>
+                    </div>
+                )}
+
                 {/* Orders List */}
                 <div className="space-y-4">
                     {filteredAndSortedOrders?.map((order) => {
@@ -344,25 +391,40 @@ export function Orders() {
                         const guestCount = Number(order.guestCount || 0);
                         const currentServices = Array.isArray(order.services) ? order.services : (order.services ? [order.services] : []);
 
+                        let paymentStatusBadge = null;
+                        if (totalAmount > 0) {
+                            if (balance <= 0) paymentStatusBadge = <span className="bg-emerald-100 text-emerald-700 text-[9px] px-1.5 py-0.5 rounded font-black uppercase border border-emerald-200">Paid</span>;
+                            else if (advance > 0) paymentStatusBadge = <span className="bg-amber-100 text-amber-700 text-[9px] px-1.5 py-0.5 rounded font-black uppercase border border-amber-200">Advance</span>;
+                            else paymentStatusBadge = <span className="bg-rose-100 text-rose-700 text-[9px] px-1.5 py-0.5 rounded font-black uppercase border border-rose-200">Unpaid</span>;
+                        }
+
                         return (
                             <div key={order._id} className={`bg-white rounded-2xl shadow-sm border transition-all duration-300 ${isExpanded ? "border-blue-300 shadow-md ring-2 ring-blue-50" : "border-slate-100 hover:border-blue-200"}`}>
-
-                                {/* Order Summary (Compact Header) */}
-                                <div className="p-4 md:p-5 cursor-pointer" onClick={() => toggleOrderDetails(order._id)}>
+                                <div className="p-4 md:p-5 cursor-pointer relative" onClick={() => toggleOrderDetails(order._id)}>
                                     <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
-                                        
                                         <div className="md:col-span-4 flex items-center gap-3">
                                             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center border border-slate-200 shrink-0">
                                                 <UserIcon className="w-5 h-5 text-slate-600" />
                                             </div>
-                                            <div className="overflow-hidden">
-                                                <h3 className="font-extrabold text-base text-slate-900 truncate">{order.customerName}</h3>
-                                                <div className="flex items-center gap-1 text-slate-500 text-[11px] font-semibold mt-0.5">
-                                                    <PhoneIcon className="w-3 h-3" /> {order.mobile}
+                                            <div className="overflow-hidden flex-1">
+                                                <h3 className="font-extrabold text-base text-slate-900 truncate flex items-center gap-2">
+                                                    {order.customerName}
+                                                </h3>
+                                                <div className="flex items-center gap-2 text-slate-500 text-[11px] font-semibold mt-0.5">
+                                                    <span className="flex items-center gap-1"><PhoneIcon className="w-3 h-3" /> {order.mobile}</span>
+                                                    {order.mobile && (
+                                                        <button
+                                                            onClick={(e) => handleWhatsAppMessage(e, order)}
+                                                            className="text-emerald-500 hover:text-emerald-600 bg-emerald-50 hover:bg-emerald-100 px-1.5 py-0.5 rounded transition-colors flex items-center gap-1"
+                                                            title="Send Message on WhatsApp"
+                                                        >
+                                                            <ChatBubbleLeftRightIcon className="w-3 h-3" />
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
-                                        
+
                                         <div className="md:col-span-4 flex flex-col justify-center border-t md:border-t-0 md:border-l border-slate-100 pt-3 md:pt-0 md:pl-4">
                                             <div className="flex items-center gap-1.5 mb-1.5">
                                                 <TagIcon className="w-3.5 h-3.5 text-indigo-500" />
@@ -370,80 +432,75 @@ export function Orders() {
                                             </div>
                                             <div className="flex items-center gap-1.5">
                                                 <CalendarDaysIcon className="w-3.5 h-3.5 text-blue-500" />
-                                                <span className="font-bold text-slate-700 text-xs">
+                                                <span className="font-bold text-slate-700 text-xs flex items-center gap-2">
                                                     {new Date(order.eventDate).toLocaleDateString("en-IN", { day: '2-digit', month: 'short', year: 'numeric' })}
+                                                    {getSmartDateBadge(order.eventDate)}
                                                 </span>
                                             </div>
                                         </div>
-                                        
-                                        {/* Status & Total */}
+
                                         <div className="md:col-span-4 flex items-center justify-between md:justify-end gap-4 border-t md:border-t-0 border-slate-100 pt-3 md:pt-0 md:pl-4">
                                             <div className="text-left md:text-right" onClick={(e) => e.stopPropagation()}>
-                                                <select
-                                                    value={order.status || "Pending"}
-                                                    onChange={(e) => handleFieldChange(order._id, "status", e.target.value)}
-                                                    className={`w-full font-bold text-[11px] rounded-md border px-2 py-0.5 outline-none appearance-none cursor-pointer mb-1 ${getStatusStyles(order.status || 'Pending')}`}
-                                                >
-                                                    <option value="Pending">⏳ Pending</option>
-                                                    <option value="Confirmed">✅ Confirmed</option>
-                                                    <option value="Cancel">❌ Cancelled</option>
-                                                </select>
-                                                <p className="text-lg font-black text-slate-900 tracking-tight leading-none">₹{totalAmount.toLocaleString('en-IN')}</p>
+                                                <div className="flex items-center justify-start md:justify-end gap-2 mb-1">
+                                                    <select
+                                                        value={order.status || "Pending"}
+                                                        onChange={(e) => handleFieldChange(order._id, "status", e.target.value)}
+                                                        className={`font-bold text-[11px] rounded-md border px-2 py-0.5 outline-none appearance-none cursor-pointer ${getStatusStyles(order.status || 'Pending')}`}
+                                                    >
+                                                        <option value="Pending">⏳ Pending</option>
+                                                        <option value="Confirmed">✅ Confirmed</option>
+                                                        <option value="Cancel">❌ Cancelled</option>
+                                                    </select>
+                                                </div>
+                                                <div className="flex items-center md:justify-end gap-2">
+                                                    <p className="text-lg font-black text-slate-900 tracking-tight leading-none">₹{totalAmount.toLocaleString('en-IN')}</p>
+                                                    {paymentStatusBadge}
+                                                </div>
                                             </div>
                                             <div className={`p-2 rounded-full transition-all duration-300 shrink-0 ${isExpanded ? "bg-blue-600 text-white shadow-md shadow-blue-500/30 rotate-180" : "bg-slate-50 text-slate-400 hover:bg-slate-200"}`}>
                                                 <ChevronDownIcon className="w-5 h-5" />
                                             </div>
                                         </div>
-
                                     </div>
                                 </div>
 
-                                {/* Expanded Section */}
                                 {isExpanded && (
                                     <div className="border-t border-slate-100 p-4 md:p-6 bg-slate-50/50 rounded-b-2xl animate-in slide-in-from-top-2 fade-in duration-200">
-
-                                        {/* Additional Info Form */}
                                         <div className="bg-white border border-slate-200 p-4 rounded-xl mb-5 shadow-sm">
                                             <h4 className="font-black text-slate-800 text-sm mb-3 flex items-center gap-1.5">
                                                 <DocumentTextIcon className="w-4 h-4 text-blue-500" /> अतिरिक्त माहिती
                                             </h4>
                                             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
-
                                                 <div className="group">
                                                     <label className="flex items-center gap-1 text-[10px] font-bold text-slate-500 uppercase mb-1">
                                                         <PhoneIcon className="w-3 h-3" /> Mobile Number
                                                     </label>
                                                     <input type="text" value={order.mobile || ""} onChange={(e) => handleFieldChange(order._id, "mobile", e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 font-bold text-slate-700 focus:bg-white focus:ring-2 focus:ring-blue-100 text-sm outline-none" />
                                                 </div>
-
                                                 <div className="group">
                                                     <label className="flex items-center gap-1 text-[10px] font-bold text-slate-500 uppercase mb-1">
                                                         <CalendarDaysIcon className="w-3 h-3" /> Event Date
                                                     </label>
                                                     <input type="date" value={order.eventDate ? new Date(order.eventDate).toISOString().split("T")[0] : ""} onChange={(e) => handleFieldChange(order._id, "eventDate", e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 font-bold text-slate-700 focus:bg-white focus:ring-2 focus:ring-blue-100 text-sm outline-none" />
                                                 </div>
-
                                                 <div className="group">
                                                     <label className="flex items-center gap-1 text-[10px] font-bold text-slate-500 uppercase mb-1">
                                                         <UsersIcon className="w-3 h-3" /> Guest Count
                                                     </label>
                                                     <input type="number" value={order.guestCount || ""} onChange={(e) => handleFieldChange(order._id, "guestCount", e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 font-bold text-slate-700 focus:bg-white focus:ring-2 focus:ring-blue-100 text-sm outline-none" />
                                                 </div>
-
                                                 <div className="group lg:col-span-1">
                                                     <label className="flex items-center gap-1 text-[10px] font-bold text-slate-500 uppercase mb-1">
                                                         <MapPinIcon className="w-3 h-3" /> Address
                                                     </label>
                                                     <input type="text" value={order.address || ""} onChange={(e) => handleFieldChange(order._id, "address", e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 font-bold text-slate-700 focus:bg-white focus:ring-2 focus:ring-blue-100 text-sm outline-none" />
                                                 </div>
-
                                                 <div className="group md:col-span-3 lg:col-span-2">
                                                     <label className="flex items-center gap-1 text-[10px] font-bold text-slate-500 uppercase mb-1">
                                                         <DocumentTextIcon className="w-3 h-3" /> Special Instructions
                                                     </label>
                                                     <textarea rows="1" value={order.specialInstruction || ""} onChange={(e) => handleFieldChange(order._id, "specialInstruction", e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 font-bold text-slate-700 focus:bg-white focus:ring-2 focus:ring-blue-100 text-sm outline-none resize-none" />
                                                 </div>
-
                                                 <div className="group md:col-span-3 lg:col-span-2">
                                                     <label className="flex items-center gap-1 text-[10px] font-bold text-slate-500 uppercase mb-1">
                                                         <SparklesIcon className="w-3 h-3" /> Services
@@ -471,7 +528,6 @@ export function Orders() {
                                             </div>
                                         </div>
 
-                                        {/* Menu Shifts Compact Grid */}
                                         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 mb-5">
                                             {order.shifts?.map((shift, shiftIdx) => (
                                                 <div key={shiftIdx} className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm flex flex-col">
@@ -479,82 +535,78 @@ export function Orders() {
                                                         <ClockIcon className={`w-4 h-4 ${shift.shift === "सकाळ" ? "text-amber-500" : shift.shift === "संध्याकाळ" ? "text-orange-500" : "text-indigo-500"}`} />
                                                         <h3 className="font-black text-slate-800 text-sm uppercase">{shift.shift} Shift</h3>
                                                     </div>
-
                                                     <div className="p-4 flex-1">
                                                         {shift.categories?.length > 0 ? (
                                                             <div className="space-y-4">
                                                                 {shift.categories.map((category, catIdx) => {
-                                                                    const currentCatPrice = category.categoryPrice !== undefined && category.categoryPrice !== "" 
-                                                                        ? category.categoryPrice 
+                                                                    const currentCatPrice = category.categoryPrice !== undefined && category.categoryPrice !== ""
+                                                                        ? category.categoryPrice
                                                                         : category.selectedItems.reduce((acc, item) => acc + Number(item.price || 0), 0);
 
                                                                     return (
-                                                                    <div key={catIdx}>
-                                                                        {/* 🟢 NEW: Category Header with Editable Category Price */}
-                                                                        <div className="flex items-center justify-between mb-2 gap-2 bg-slate-50 p-1.5 rounded-lg border border-slate-100">
-                                                                            <h4 className="inline-block text-[10px] font-black text-indigo-700 uppercase px-1">
-                                                                                {category.category}
-                                                                            </h4>
-                                                                            <div className="flex items-center gap-2">
-                                                                                <div className="flex items-center bg-white border border-indigo-200 rounded-md overflow-hidden shadow-sm focus-within:border-indigo-400 focus-within:ring-1 focus-within:ring-indigo-400 transition-all">
-                                                                                    <span className="bg-indigo-50 px-1.5 py-1 text-indigo-600 text-[9px] font-bold border-r border-indigo-200 uppercase tracking-wider">
-                                                                                        Total ₹
-                                                                                    </span>
-                                                                                    <input 
-                                                                                        type="number" 
-                                                                                        value={currentCatPrice}
-                                                                                        onChange={(e) => handleCategoryPriceChange(order._id, shiftIdx, catIdx, e.target.value)}
-                                                                                        className="w-16 px-1.5 py-1 text-xs outline-none text-right font-black text-indigo-700" 
-                                                                                        placeholder="0"
-                                                                                    />
-                                                                                </div>
-                                                                                <button 
-                                                                                    onClick={() => handleRemoveCategory(order._id, shiftIdx, catIdx)}
-                                                                                    className="text-slate-400 hover:text-rose-500 transition-colors bg-white p-1 rounded-md border border-slate-200 shadow-sm"
-                                                                                    title="Delete Category"
-                                                                                >
-                                                                                    <TrashIcon className="w-3.5 h-3.5" />
-                                                                                </button>
-                                                                            </div>
-                                                                        </div>
-                                                                        
-                                                                        <div className="space-y-1.5">
-                                                                            {category.selectedItems.map((item, itemIdx) => (
-                                                                                <div key={itemIdx} className="flex justify-between items-center p-2 rounded-lg border border-transparent hover:border-slate-200 hover:bg-slate-50 transition-all group pl-3 border-l-2 border-l-indigo-200">
-                                                                                    <div className="flex items-center gap-2 truncate pr-2">
-                                                                                        <div className="w-1 h-1 rounded-full bg-slate-400 shrink-0"></div>
-                                                                                        <span className="font-bold text-slate-700 text-sm truncate">{item.itemName}</span>
+                                                                        <div key={catIdx}>
+                                                                            <div className="flex items-center justify-between mb-2 gap-2 bg-slate-50 p-1.5 rounded-lg border border-slate-100">
+                                                                                <h4 className="inline-block text-[10px] font-black text-indigo-700 uppercase px-1">
+                                                                                    {category.category}
+                                                                                </h4>
+                                                                                <div className="flex items-center gap-2">
+                                                                                    <div className="flex items-center bg-white border border-indigo-200 rounded-md overflow-hidden shadow-sm focus-within:border-indigo-400 focus-within:ring-1 focus-within:ring-indigo-400 transition-all">
+                                                                                        <span className="bg-indigo-50 px-1.5 py-1 text-indigo-600 text-[9px] font-bold border-r border-indigo-200 uppercase tracking-wider">
+                                                                                            Total ₹
+                                                                                        </span>
+                                                                                        <input
+                                                                                            type="number"
+                                                                                            value={currentCatPrice}
+                                                                                            onChange={(e) => handleCategoryPriceChange(order._id, shiftIdx, catIdx, e.target.value)}
+                                                                                            className="w-16 px-1.5 py-1 text-xs outline-none text-right font-black text-indigo-700"
+                                                                                            placeholder="0"
+                                                                                        />
                                                                                     </div>
-                                                                                    <div className="flex items-center gap-2 shrink-0">
-                                                                                        <div className="flex items-center bg-white border border-slate-200 rounded-md overflow-hidden">
-                                                                                            <span className="bg-slate-50 px-1.5 py-1 text-slate-400 text-xs font-bold border-r border-slate-200">₹</span>
-                                                                                            <input type="number" value={item.price} onChange={(e) => handleItemPriceChange(order._id, shiftIdx, catIdx, itemIdx, e.target.value)} className="w-14 px-1.5 py-1 text-xs outline-none text-right font-black text-slate-800" />
-                                                                                        </div>
-                                                                                        <button onClick={() => handleRemoveItem(order, shift.shift, category.category, item.itemId)} className="text-slate-400 hover:text-rose-500">
-                                                                                            <TrashIcon className="w-4 h-4" />
-                                                                                        </button>
-                                                                                    </div>
-                                                                                </div>
-                                                                            ))}
-                                                                            
-                                                                            {/* Add Item Button */}
-                                                                            <div className="mt-2 pt-2">
-                                                                                {!showAddItem[`${order._id}-${shiftIdx}-${catIdx}`] ? (
-                                                                                    <button onClick={() => setShowAddItem((prev) => ({ ...prev, [`${order._id}-${shiftIdx}-${catIdx}`]: true }))} className="text-xs text-emerald-600 font-bold hover:underline">
-                                                                                        + Add Item
+                                                                                    <button
+                                                                                        onClick={() => handleRemoveCategory(order._id, shiftIdx, catIdx)}
+                                                                                        className="text-slate-400 hover:text-rose-500 transition-colors bg-white p-1 rounded-md border border-slate-200 shadow-sm"
+                                                                                        title="Delete Category"
+                                                                                    >
+                                                                                        <TrashIcon className="w-3.5 h-3.5" />
                                                                                     </button>
-                                                                                ) : (
-                                                                                    <div className="flex gap-2 items-center bg-slate-50 p-2 rounded-lg border border-slate-200">
-                                                                                        <input type="text" placeholder="Name" value={newItemName[`${order._id}-${shiftIdx}-${catIdx}`] || ""} onChange={(e) => setNewItemName((prev) => ({ ...prev, [`${order._id}-${shiftIdx}-${catIdx}`]: e.target.value }))} className="w-full min-w-[80px] border border-slate-300 rounded text-xs px-2 py-1 outline-none" />
-                                                                                        <input type="number" placeholder="₹" value={newItemPrice[`${order._id}-${shiftIdx}-${catIdx}`] || ""} onChange={(e) => setNewItemPrice((prev) => ({ ...prev, [`${order._id}-${shiftIdx}-${catIdx}`]: e.target.value }))} className="w-16 border border-slate-300 rounded text-xs px-2 py-1 outline-none" />
-                                                                                        <button onClick={() => { handleAddItem(order._id, shiftIdx, catIdx); setShowAddItem((prev) => ({ ...prev, [`${order._id}-${shiftIdx}-${catIdx}`]: false })); }} className="bg-indigo-600 text-white px-2 py-1 rounded text-xs font-bold">Save</button>
-                                                                                        <button onClick={() => setShowAddItem((prev) => ({ ...prev, [`${order._id}-${shiftIdx}-${catIdx}`]: false }))} className="text-slate-500 px-1"><XCircleIcon className="w-4 h-4"/></button>
+                                                                                </div>
+                                                                            </div>
+                                                                            <div className="space-y-1.5">
+                                                                                {category.selectedItems.map((item, itemIdx) => (
+                                                                                    <div key={itemIdx} className="flex justify-between items-center p-2 rounded-lg border border-transparent hover:border-slate-200 hover:bg-slate-50 transition-all group pl-3 border-l-2 border-l-indigo-200">
+                                                                                        <div className="flex items-center gap-2 truncate pr-2">
+                                                                                            <div className="w-1 h-1 rounded-full bg-slate-400 shrink-0"></div>
+                                                                                            <span className="font-bold text-slate-700 text-sm truncate">{item.itemName}</span>
+                                                                                        </div>
+                                                                                        <div className="flex items-center gap-2 shrink-0">
+                                                                                            <div className="flex items-center bg-white border border-slate-200 rounded-md overflow-hidden">
+                                                                                                <span className="bg-slate-50 px-1.5 py-1 text-slate-400 text-xs font-bold border-r border-slate-200">₹</span>
+                                                                                                <input type="number" value={item.price} onChange={(e) => handleItemPriceChange(order._id, shiftIdx, catIdx, itemIdx, e.target.value)} className="w-14 px-1.5 py-1 text-xs outline-none text-right font-black text-slate-800" />
+                                                                                            </div>
+                                                                                            <button onClick={() => handleRemoveItem(order, shift.shift, category.category, item.itemId)} className="text-slate-400 hover:text-rose-500">
+                                                                                                <TrashIcon className="w-4 h-4" />
+                                                                                            </button>
+                                                                                        </div>
                                                                                     </div>
-                                                                                )}
+                                                                                ))}
+                                                                                <div className="mt-2 pt-2">
+                                                                                    {!showAddItem[`${order._id}-${shiftIdx}-${catIdx}`] ? (
+                                                                                        <button onClick={() => setShowAddItem((prev) => ({ ...prev, [`${order._id}-${shiftIdx}-${catIdx}`]: true }))} className="text-xs text-emerald-600 font-bold hover:underline">
+                                                                                            + Add Item
+                                                                                        </button>
+                                                                                    ) : (
+                                                                                        <div className="flex gap-2 items-center bg-slate-50 p-2 rounded-lg border border-slate-200">
+                                                                                            <input type="text" placeholder="Name" value={newItemName[`${order._id}-${shiftIdx}-${catIdx}`] || ""} onChange={(e) => setNewItemName((prev) => ({ ...prev, [`${order._id}-${shiftIdx}-${catIdx}`]: e.target.value }))} className="w-full min-w-[80px] border border-slate-300 rounded text-xs px-2 py-1 outline-none" />
+                                                                                            <input type="number" placeholder="₹" value={newItemPrice[`${order._id}-${shiftIdx}-${catIdx}`] || ""} onChange={(e) => setNewItemPrice((prev) => ({ ...prev, [`${order._id}-${shiftIdx}-${catIdx}`]: e.target.value }))} className="w-16 border border-slate-300 rounded text-xs px-2 py-1 outline-none" />
+                                                                                            <button onClick={() => { handleAddItem(order._id, shiftIdx, catIdx); setShowAddItem((prev) => ({ ...prev, [`${order._id}-${shiftIdx}-${catIdx}`]: false })); }} className="bg-indigo-600 text-white px-2 py-1 rounded text-xs font-bold">Save</button>
+                                                                                            <button onClick={() => setShowAddItem((prev) => ({ ...prev, [`${order._id}-${shiftIdx}-${catIdx}`]: false }))} className="text-slate-500 px-1"><XCircleIcon className="w-4 h-4" /></button>
+                                                                                        </div>
+                                                                                    )}
+                                                                                </div>
                                                                             </div>
                                                                         </div>
-                                                                    </div>
-                                                                )})}
+                                                                    )
+                                                                })}
                                                             </div>
                                                         ) : (
                                                             <div className="flex flex-col items-center justify-center py-6 text-slate-400">
@@ -562,8 +614,6 @@ export function Orders() {
                                                                 <p className="text-xs font-medium">Empty Shift</p>
                                                             </div>
                                                         )}
-
-                                                        {/* NEW: Add Category Section */}
                                                         <div className="mt-4 pt-3 border-t border-slate-100">
                                                             {!showAddCategory[`${order._id}-${shiftIdx}`] ? (
                                                                 <button
@@ -592,19 +642,14 @@ export function Orders() {
                                                                 </div>
                                                             )}
                                                         </div>
-
                                                     </div>
                                                 </div>
                                             ))}
                                         </div>
 
-                                        {/* 🧮 Compact & Attractive Billing Breakdown Section */}
                                         <div className="bg-slate-900 text-white p-5 rounded-xl shadow-lg relative overflow-hidden">
                                             <div className="absolute top-0 right-0 w-40 h-40 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
-                                            
                                             <div className="flex flex-col xl:flex-row justify-between gap-6 relative z-10">
-                                                
-                                                {/* Left Panel: Math */}
                                                 <div className="flex-1 flex flex-wrap items-center gap-3 bg-slate-800/50 p-4 rounded-xl border border-slate-700/50">
                                                     <div>
                                                         <p className="text-[9px] text-slate-400 uppercase">प्रति थाळी (Per Plate)</p>
@@ -621,8 +666,6 @@ export function Orders() {
                                                         <p className="text-xl font-black text-indigo-400">₹{(perPlatePrice * guestCount).toLocaleString('en-IN')}</p>
                                                     </div>
                                                 </div>
-
-                                                {/* Right Panel: Inputs & Balances */}
                                                 <div className="flex flex-col gap-3 w-full xl:w-[350px] shrink-0">
                                                     <div className="flex items-center justify-between bg-slate-800 border border-slate-600 rounded-lg p-2">
                                                         <span className="text-[10px] font-bold text-slate-400 uppercase px-1">Grand Total</span>
@@ -631,8 +674,6 @@ export function Orders() {
                                                             <input type="number" value={order.grandTotal || ""} onChange={(e) => handleFieldChange(order._id, "grandTotal", e.target.value)} className="w-24 px-2 py-1 outline-none text-base font-black text-white bg-slate-700 text-right" />
                                                         </div>
                                                     </div>
-
-                                                    {/* Advance Payment Input (Shows only when Confirmed) */}
                                                     {order.status === "Confirmed" && (
                                                         <div className="flex items-center justify-between bg-emerald-900/30 border border-emerald-500/50 rounded-lg p-2 shadow-inner">
                                                             <span className="text-[10px] font-bold text-emerald-400 uppercase px-1 flex items-center gap-1"><CheckCircleSolid className="w-3 h-3" /> Advance Received</span>
@@ -642,14 +683,10 @@ export function Orders() {
                                                             </div>
                                                         </div>
                                                     )}
-
-                                                    {/* Balance Due Display */}
-                                                    <div className="flex justify-between items-center px-3 py-2 mt-1 bg-rose-900/20 border border-rose-500/30 rounded-lg">
-                                                        <span className="text-xs font-bold text-rose-400 uppercase">Balance Due</span>
-                                                        <span className="text-xl font-black text-rose-400">₹{balance.toLocaleString("en-IN")}</span>
+                                                    <div className={`flex justify-between items-center px-3 py-2 mt-1 border rounded-lg ${balance <= 0 && totalAmount > 0 ? "bg-emerald-900/20 border-emerald-500/30" : "bg-rose-900/20 border-rose-500/30"}`}>
+                                                        <span className={`text-xs font-bold uppercase ${balance <= 0 && totalAmount > 0 ? "text-emerald-400" : "text-rose-400"}`}>Balance Due</span>
+                                                        <span className={`text-xl font-black ${balance <= 0 && totalAmount > 0 ? "text-emerald-400" : "text-rose-400"}`}>₹{balance.toLocaleString("en-IN")}</span>
                                                     </div>
-
-                                                    {/* Action Buttons */}
                                                     <div className="grid grid-cols-2 gap-2 mt-1">
                                                         <button onClick={() => handleSaveOrder(order)} className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 rounded-lg text-sm col-span-2 transition-all">Save Changes</button>
                                                         <button onClick={() => setEstimationOrder(order)} className="flex items-center justify-center gap-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold py-2 rounded-lg text-xs transition-all"><DocumentTextIcon className="w-4 h-4" /> एस्टिमेशन</button>
@@ -658,7 +695,6 @@ export function Orders() {
                                                 </div>
                                             </div>
                                         </div>
-
                                     </div>
                                 )}
                             </div>

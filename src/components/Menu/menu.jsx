@@ -149,9 +149,13 @@ export function Menu() {
     const totalSelectedItemsAcrossShifts = Object.values(selectedItems).flat().length;
 
     useEffect(() => {
-        if (isCartOpen) document.body.style.overflow = "hidden";
-        else document.body.style.overflow = "auto";
+        document.body.style.overflow = isCartOpen ? "hidden" : "auto";
+
+        return () => {
+            document.body.style.overflow = "auto";
+        };
     }, [isCartOpen]);
+
 
     const handleContinue = () => {
         if (!customer.name.trim()) { alert("Please enter customer name"); return; }

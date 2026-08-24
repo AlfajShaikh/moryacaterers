@@ -23,6 +23,10 @@ export default function Login({ setIsLoggedIn }) {
         );
 
         if (loginUser.fulfilled.match(result)) {
+             // User has interacted with the page, so fullscreen request is allowed
+    if (!document.fullscreenElement) {
+      await document.documentElement.requestFullscreen();
+    }
             setIsLoggedIn(true);
         } else {
             alert(result.payload?.message || "Invalid Email or Password");

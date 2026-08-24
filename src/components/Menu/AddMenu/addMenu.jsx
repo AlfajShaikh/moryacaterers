@@ -12,7 +12,8 @@ import {
     CurrencyRupeeIcon,
     TagIcon,
     DocumentTextIcon,
-    CheckCircleIcon
+    CheckCircleIcon,
+    ExclamationCircleIcon // <-- नवीन आयकॉन
 } from "@heroicons/react/24/outline";
 import { PencilSquareIcon, TrashIcon } from "@heroicons/react/24/solid";
 
@@ -85,6 +86,21 @@ export function AddMenu() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        
+        // --- नवीन: डुप्लिकेट सबमिशन रोखण्यासाठी ---
+        const existingCategory = menus?.find(m => m.category === formData.category);
+        const hasDuplicate = formData.menuItems.some(item => 
+            existingCategory?.menuItems?.some(existingItem => 
+                existingItem.itemName.toLowerCase().trim() === item.itemName.toLowerCase().trim() &&
+                (!editing || editing.itemId !== existingItem._id)
+            )
+        );
+
+        if(hasDuplicate) {
+            alert("तुम्ही जोडत असलेल्या नावाचा पदार्थ या प्रकारात आधीपासून उपलब्ध आहे. कृपया नाव बदला.");
+            return;
+        }
+
         let result;
 
         if (editing) {
@@ -176,6 +192,12 @@ export function AddMenu() {
     const availableCategories = menus ? [...new Set(menus.map(m => m.category))] : [];
     const totalItemsCount = menus ? menus.reduce((acc, curr) => acc + curr.menuItems.length, 0) : 0;
 
+    // --- नवीन: Helper to get item count per category ---
+    const getCategoryItemCount = (catName) => {
+        const cat = menus?.find(m => m.category === catName);
+        return cat ? cat.menuItems.length : 0;
+    };
+
     return (
         <div className="relative min-h-screen bg-slate-50 font-sans text-slate-800 p-4 md:p-8 pb-24 lg:pb-8 overflow-hidden">
 
@@ -227,9 +249,14 @@ export function AddMenu() {
                                     required
                                 >
                                     <option value="" disabled>प्रकार निवडा...</option>
-                                    {categories.map((category) => (
-                                        <option key={category} value={category}>{category}</option>
-                                    ))}
+                                    {categories.map((category) => {
+                                        const count = getCategoryItemCount(category);
+                                        return (
+                                            <option key={category} value={category}>
+                                                {category} {count > 0 ? `(${count} पदार्थ)` : ''}
+                                            </option>
+                                        );
+                                    })}
                                 </select>
                             ) : (
                                 <div className="flex gap-2 animate-in fade-in zoom-in-95 duration-200">
@@ -253,8 +280,16 @@ export function AddMenu() {
 
                         {/* Items Array */}
                         <div className="space-y-4">
-                            {formData.menuItems?.map((item, index) => (
-                                <div key={index} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-[0_2px_10px_rgba(0,0,0,0.02)] relative animate-in slide-in-from-bottom-4 duration-300">
+                            {formData.menuItems?.map((item, index) => {
+                                // --- नवीन: डुप्लिकेट चेकर ---
+                                const existingCategory = menus?.find(m => m.category === formData.category);
+                                const isDuplicate = item.itemName && existingCategory?.menuItems?.some(existingItem => 
+                                    existingItem.itemName.toLowerCase().trim() === item.itemName.toLowerCase().trim() &&
+                                    (!editing || editing.itemId !== existingItem._id)
+                                );
+
+                                return (
+                                <div key={index} className={`bg-white border ${isDuplicate ? "border-rose-400 shadow-rose-100" : "border-slate-200"} rounded-2xl p-5 shadow-[0_2px_10px_rgba(0,0,0,0.02)] relative animate-in slide-in-from-bottom-4 duration-300`}>
 
                                     <div className="flex justify-between items-center mb-5 pb-3 border-b border-slate-100">
                                         <h2 className="font-black text-slate-800 flex items-center gap-2">
@@ -271,19 +306,34 @@ export function AddMenu() {
                                     <div className="space-y-4">
                                         {/* Name Input */}
                                         <div className="relative group">
-                                            <TagIcon className="w-5 h-5 absolute left-4 top-3.5 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
-                                            <input name="itemName" value={item.itemName} onChange={(e) => handleItemChange(index, e)} placeholder="पदार्थाचे नाव (उदा. पनीर मसाला)" required className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-12 pr-4 py-3.5 focus:bg-white focus:ring-4 focus:ring-indigo-100 focus:border-indigo-400 outline-none font-semibold transition-all" />
+                                            <TagIcon className={`w-5 h-5 absolute left-4 top-3.5 transition-colors ${isDuplicate ? "text-rose-500" : "text-slate-400 group-focus-within:text-indigo-500"}`} />
+                                            <input name="itemName" value={item.itemName} onChange={(e) => handleItemChange(index, e)} placeholder="पदार्थाचे नाव (उदा. पनीर मसाला)" required className={`w-full bg-slate-50 border rounded-xl pl-12 pr-4 py-3.5 outline-none font-semibold transition-all focus:bg-white focus:ring-4 ${isDuplicate ? "border-rose-300 focus:ring-rose-100 focus:border-rose-500 text-rose-700" : "border-slate-200 focus:ring-indigo-100 focus:border-indigo-400"}`} />
+                                            {/* Duplicate Warning Message */}
+                                            {isDuplicate && (
+                                                <p className="text-[11px] text-rose-500 font-bold mt-1.5 flex items-center gap-1 animate-pulse">
+                                                    <ExclamationCircleIcon className="w-4 h-4"/> हा पदार्थ या प्रकारात आधीपासून उपलब्ध आहे.
+                                                </p>
+                                            )}
                                         </div>
 
-                                        {/* Grid for Price & URL */}
+                                        {/* Grid for Price & URL with Live Image Preview */}
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                             <div className="relative group">
                                                 <CurrencyRupeeIcon className="w-5 h-5 absolute left-4 top-3.5 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
                                                 <input type="number" name="price" value={item.price} onChange={(e) => handleItemChange(index, e)} placeholder="किंमत (₹)" required className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-12 pr-4 py-3.5 focus:bg-white focus:ring-4 focus:ring-indigo-100 focus:border-indigo-400 outline-none font-semibold transition-all" />
                                             </div>
-                                            <div className="relative group">
-                                                <PhotoIcon className="w-5 h-5 absolute left-4 top-3.5 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
-                                                <input name="url" value={item.url} onChange={(e) => handleItemChange(index, e)} placeholder="फोटोची URL" required className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-12 pr-4 py-3.5 focus:bg-white focus:ring-4 focus:ring-indigo-100 focus:border-indigo-400 outline-none font-semibold transition-all" />
+                                            
+                                            {/* --- नवीन: Live Image Preview --- */}
+                                            <div className="flex gap-2 items-center">
+                                                <div className="relative group flex-1">
+                                                    <PhotoIcon className="w-5 h-5 absolute left-4 top-3.5 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+                                                    <input name="url" value={item.url} onChange={(e) => handleItemChange(index, e)} placeholder="फोटोची URL" required className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-12 pr-4 py-3.5 focus:bg-white focus:ring-4 focus:ring-indigo-100 focus:border-indigo-400 outline-none font-semibold transition-all" />
+                                                </div>
+                                                {item.url && (
+                                                    <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 border border-slate-200 shadow-sm bg-slate-100 flex items-center justify-center">
+                                                        <img src={item.url} alt="Preview" className="w-full h-full object-cover" onError={(e) => { e.target.src = "https://via.placeholder.com/150?text=Invalid" }} />
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
 
@@ -315,7 +365,7 @@ export function AddMenu() {
                                         </div>
                                     </div>
                                 </div>
-                            ))}
+                            )})}
                         </div>
 
                         {/* Add More Button */}

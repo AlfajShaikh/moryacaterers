@@ -11,6 +11,7 @@ import { SignIn } from "./components/SignIn/signIn";
 import { AddMenu } from "./components/Menu/AddMenu/addMenu";
 import { Invoice } from "./components/Invoice/invoice";
 import { BusinessAnalytics } from "./components/Home/BusinessAnalytics/businessAnalytics";
+import { Planning } from "./components/Planning/planning";
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(
@@ -41,6 +42,7 @@ function App() {
             {/* Redirect any unknown route */}
             <Route path="*" element={<Navigate to="/" replace />} />
             <Route path="/signin" element={<SignIn />} />
+             <Route path="/planning" element={<Planning />} />
 
           </Routes>
         </>
