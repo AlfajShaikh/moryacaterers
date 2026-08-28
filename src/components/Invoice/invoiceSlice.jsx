@@ -7,14 +7,10 @@ export const searchInvoice = createAsyncThunk(
         try {
             return await searchInvoiceAPI(name);
         } catch (err) {
-            return thunkAPI.rejectWithValue(
-                err.response?.data || "Unable to search invoice"
-            );
+            return thunkAPI.rejectWithValue(err.response?.data || "Unable to search invoice");
         }
     }
 );
-
-
 
 export const getConfirmedInvoices = createAsyncThunk(
     "invoice/confirmed",
@@ -22,13 +18,10 @@ export const getConfirmedInvoices = createAsyncThunk(
         try {
             return await getConfirmedInvoicesAPI();
         } catch (err) {
-            return thunkAPI.rejectWithValue(
-                err.response?.data || "Unable to fetch invoices"
-            );
+            return thunkAPI.rejectWithValue(err.response?.data || "Unable to fetch invoices");
         }
     }
 );
-
 
 export const submitInvoice = createAsyncThunk(
     "invoice/submit",
@@ -36,27 +29,22 @@ export const submitInvoice = createAsyncThunk(
         try {
             return await submitInvoiceAPI(data);
         } catch (err) {
-            return thunkAPI.rejectWithValue(
-                err.response?.data || "Unable to submit invoice"
-            );
+            return thunkAPI.rejectWithValue(err.response?.data || "Unable to submit invoice");
         }
     }
 );
 
-
+// 🚨 MODIFIED: Here we accept 'mobile' and pass it to API
 export const getInvoiceDetails = createAsyncThunk(
     "invoice/details",
-    async (id, thunkAPI) => {
+    async (mobile, thunkAPI) => {
         try {
-            return await getInvoiceDetailsAPI(id);
+            return await getInvoiceDetailsAPI(mobile);
         } catch (err) {
-            return thunkAPI.rejectWithValue(
-                err.response?.data || "Unable to fetch invoice"
-            );
+            return thunkAPI.rejectWithValue(err.response?.data || "Unable to fetch invoice");
         }
     }
 );
-
 
 export const getInvoiceById = createAsyncThunk(
     "invoice/getById",
@@ -64,16 +52,13 @@ export const getInvoiceById = createAsyncThunk(
         try {
             return await getInvoiceByIdAPI(id);
         } catch (err) {
-            return thunkAPI.rejectWithValue(
-                err.response?.data || "Unable to fetch invoice"
-            );
+            return thunkAPI.rejectWithValue(err.response?.data || "Unable to fetch invoice");
         }
     }
 );
 
 const invoiceSlice = createSlice({
     name: "invoice",
-
     initialState: {
         invoices: [],
         invoiceDetails: null,
@@ -81,73 +66,32 @@ const invoiceSlice = createSlice({
         loading: false,
         error: null,
     },
-
     reducers: {},
-
     extraReducers: (builder) => {
         builder
-
-            .addCase(searchInvoice.pending, (state) => {
-                state.loading = true;
-                state.error = null;
+            // Search
+            .addCase(searchInvoice.pending, (state) => { state.loading = true; state.error = null; })
+            .addCase(searchInvoice.fulfilled, (state, action) => { state.loading = false; state.invoices = action.payload.data || []; })
+            .addCase(searchInvoice.rejected, (state, action) => { state.loading = false; state.error = action.payload; })
+            // Confirmed Invoices
+            .addCase(getConfirmedInvoices.pending, (state) => { state.loading = true; })
+            .addCase(getConfirmedInvoices.fulfilled, (state, action) => { state.loading = false; state.invoices = action.payload.data || []; })
+            .addCase(getConfirmedInvoices.rejected, (state, action) => { state.loading = false; state.error = action.payload; })
+            // 🚨 Invoice Details (Mobile wise)
+            .addCase(getInvoiceDetails.pending, (state) => { state.loading = true; })
+            .addCase(getInvoiceDetails.fulfilled, (state, action) => { 
+                state.loading = false; 
+                state.invoiceDetails = action.payload.data; // Stores mobile-wise combined data
             })
-
-            .addCase(searchInvoice.fulfilled, (state, action) => {
-                state.loading = false;
-                state.invoices = action.payload.data || [];
-            })
-
-            .addCase(searchInvoice.rejected, (state, action) => {
-                state.loading = false;
-                state.error = action.payload;
-            }).addCase(getConfirmedInvoices.pending, (state) => {
-                state.loading = true;
-            })
-
-            .addCase(getConfirmedInvoices.fulfilled, (state, action) => {
-                state.loading = false;
-                state.invoices = action.payload.data || [];
-            })
-
-            .addCase(getConfirmedInvoices.rejected, (state, action) => {
-                state.loading = false;
-                state.error = action.payload;
-            }).addCase(getInvoiceDetails.pending, (state) => {
-                state.loading = true;
-            })
-
-            .addCase(getInvoiceDetails.fulfilled, (state, action) => {
-                state.loading = false;
-                state.invoiceDetails = action.payload.data;
-            })
-
-            .addCase(getInvoiceDetails.rejected, (state, action) => {
-                state.loading = false;
-                state.error = action.payload;
-            }).addCase(submitInvoice.pending, (state) => {
-                state.loading = true;
-            })
-
-            .addCase(submitInvoice.fulfilled, (state) => {
-                state.loading = false;
-            })
-
-            .addCase(submitInvoice.rejected, (state, action) => {
-                state.loading = false;
-                state.error = action.payload;
-            }).addCase(getInvoiceById.pending, (state) => {
-                state.loading = true;
-            })
-
-            .addCase(getInvoiceById.fulfilled, (state, action) => {
-                state.loading = false;
-                state.invoiceData = action.payload.data;
-            })
-
-            .addCase(getInvoiceById.rejected, (state, action) => {
-                state.loading = false;
-                state.error = action.payload;
-            });
+            .addCase(getInvoiceDetails.rejected, (state, action) => { state.loading = false; state.error = action.payload; })
+            // Submit
+            .addCase(submitInvoice.pending, (state) => { state.loading = true; })
+            .addCase(submitInvoice.fulfilled, (state) => { state.loading = false; })
+            .addCase(submitInvoice.rejected, (state, action) => { state.loading = false; state.error = action.payload; })
+            // By ID
+            .addCase(getInvoiceById.pending, (state) => { state.loading = true; })
+            .addCase(getInvoiceById.fulfilled, (state, action) => { state.loading = false; state.invoiceData = action.payload.data; })
+            .addCase(getInvoiceById.rejected, (state, action) => { state.loading = false; state.error = action.payload; });
     },
 });
 

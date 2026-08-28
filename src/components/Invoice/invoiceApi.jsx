@@ -17,8 +17,8 @@ export const getConfirmedInvoicesAPI = async () => {
 };
 
 
-export const getInvoiceDetailsAPI = async (id) => {
-    const response = await API.get(`/invoice/invoice/${id}`);
+export const getInvoiceDetailsAPI = async (mobile) => {
+    const response = await API.get(`/invoice/invoice/${mobile}`);
     return response.data;
 };
 

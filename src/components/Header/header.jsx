@@ -49,18 +49,21 @@ export default function Header({ setIsLoggedIn }) {
         <header className="sticky top-0 z-50 bg-white/70 backdrop-blur-2xl shadow-[0_4px_30px_rgba(0,0,0,0.03)] border-b border-white/80 transition-all duration-300">
             <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8">
 
-                <div className="flex items-center justify-between h-16 md:h-20 transition-all">
+                {/* 👇 Decreased container height from h-16 md:h-20 to h-12 md:h-16 */}
+                <div className="flex items-center justify-between h-12 md:h-16 transition-all">
 
                     {/* Logo Section */}
-                    <div 
-                        className="flex items-center gap-3 relative group cursor-pointer" 
+                    <div
+                        className="flex items-center gap-3 relative group cursor-pointer"
                         onClick={() => navigate("/")}
                     >
                         {/* Subtle glow effect on hover */}
                         <div className="absolute inset-0 bg-indigo-400 blur-xl rounded-full opacity-0 group-hover:opacity-20 transition-opacity duration-500 pointer-events-none"></div>
+                        
+                        {/* 👇 Decreased logo size from h-10 md:h-12 to h-8 md:h-10 */}
                         <img
                             src={logo}
-                            className="h-10 md:h-12 object-contain relative z-10 drop-shadow-sm transition-transform duration-300 group-hover:scale-105"
+                            className="h-8 md:h-10 object-contain relative z-10 drop-shadow-sm transition-transform duration-300 group-hover:scale-105"
                             alt="Morya Logo"
                         />
                     </div>
@@ -72,14 +75,14 @@ export default function Header({ setIsLoggedIn }) {
                         <div className="relative" ref={dropdownRef}>
                             <button
                                 onClick={() => setOpen(!open)}
-                                className={`relative flex items-center gap-2 md:gap-3 rounded-full py-1.5 pl-1.5 pr-3 md:pr-4 transition-all duration-300 border-2 active:scale-95
+                                className={`relative flex items-center gap-2 md:gap-3 rounded-full py-1 pl-1 pr-3 md:pr-4 transition-all duration-300 border-2 active:scale-95
                                     ${open
                                         ? "bg-indigo-50 border-indigo-200 shadow-md shadow-indigo-100/50"
                                         : "bg-white border-slate-100 hover:border-indigo-200 hover:shadow-lg hover:shadow-indigo-50/50"
                                     }`}
                             >
-                                {/* Gradient Avatar */}
-                                <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center font-black text-sm md:text-base shadow-md border-2 border-white">
+                                {/* 👇 Decreased Avatar size from w-8/10 h-8/10 to w-7/9 h-7/9 */}
+                                <div className="w-7 h-7 md:w-9 md:h-9 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center font-black text-sm md:text-base shadow-md border-2 border-white">
                                     {user.name?.charAt(0).toUpperCase()}
                                 </div>
 
@@ -93,16 +96,15 @@ export default function Header({ setIsLoggedIn }) {
                                 </div>
 
                                 <ChevronDownIcon
-                                    className={`w-4 h-4 ml-1 transition-transform duration-300 ${
-                                        open ? "rotate-180 text-indigo-600" : "text-slate-400"
-                                    }`}
+                                    className={`w-4 h-4 ml-1 transition-transform duration-300 ${open ? "rotate-180 text-indigo-600" : "text-slate-400"
+                                        }`}
                                 />
                             </button>
 
                             {/* Floating Dropdown Menu */}
                             {open && (
                                 <div className="absolute right-0 mt-3 w-64 bg-white/95 backdrop-blur-3xl rounded-3xl shadow-[0_10px_40px_rgba(0,0,0,0.08)] border border-slate-100 overflow-hidden transform origin-top-right transition-all animate-in fade-in zoom-in-95 duration-200 z-50">
-                                    
+
                                     {/* Mobile User Info (Visible only on small screens) */}
                                     <div className="md:hidden px-5 py-4 border-b border-slate-100 bg-slate-50/50">
                                         <p className="text-sm font-extrabold text-slate-800">
@@ -144,8 +146,8 @@ export default function Header({ setIsLoggedIn }) {
                         </div>
 
                         {/* Mobile Menu Button */}
-                        <button className="lg:hidden p-2.5 rounded-xl bg-white border-2 border-slate-100 text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 active:scale-95 transition-all shadow-sm">
-                            <Bars3Icon className="w-6 h-6" />
+                        <button className="lg:hidden p-2 rounded-xl bg-white border-2 border-slate-100 text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 active:scale-95 transition-all shadow-sm">
+                            <Bars3Icon className="w-5 h-5" />
                         </button>
 
                     </div>
