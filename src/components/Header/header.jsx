@@ -59,7 +59,7 @@ export default function Header({ setIsLoggedIn }) {
                     >
                         {/* Subtle glow effect on hover */}
                         <div className="absolute inset-0 bg-indigo-400 blur-xl rounded-full opacity-0 group-hover:opacity-20 transition-opacity duration-500 pointer-events-none"></div>
-                        
+
                         {/* 👇 Decreased logo size from h-10 md:h-12 to h-8 md:h-10 */}
                         <img
                             src={logo}

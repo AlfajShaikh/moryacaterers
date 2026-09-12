@@ -15,7 +15,8 @@ import {
     ChartBarIcon,
     ChartPieIcon,
     SunIcon,
-    MoonIcon
+    MoonIcon,
+    LanguageIcon
 } from "@heroicons/react/24/outline";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -23,19 +24,59 @@ import { useNavigate } from "react-router-dom";
 import { getDashboardCounts, markRead, getCalendar, getOrderStatus } from "./homeSlice";
 import { EventCalendarModal } from "../EventCalendarModal/eventCalendarModal";
 
+// --- Translation Dictionary ---
+const translations = {
+    loadingTitle: { mr: "डॅशबोर्ड लोड होत आहे...", en: "Loading Dashboard..." },
+    loadingDesc: { mr: "कृपया प्रतीक्षा करा, माहिती मिळवली जात आहे.", en: "Please wait, fetching information." },
+    dashboard: { mr: "डॅशबोर्ड", en: "Dashboard" },
+    dashboardDesc: { mr: "आपल्या केटरिंग व्यवसायाचा संपूर्ण आढावा व नियंत्रण", en: "Complete overview and control of your catering business" },
+    monthlyReport: { mr: "मासिक अहवाल", en: "Monthly Report" },
+    viewCalendar: { mr: "कॅलेंडर पहा", en: "View Calendar" },
+    menuItems: { mr: "मेनू पदार्थ", en: "Menu Items" },
+    totalOrders: { mr: "एकूण ऑर्डर्स", en: "Total Orders" },
+    upcomingEvents: { mr: "आगामी कार्यक्रम", en: "Upcoming Events" },
+    newOrder: { mr: "नवीन ऑर्डर", en: "New Order" },
+    newOrderDesc: { mr: "नवीन ग्राहक ऑर्डर तयार करा", en: "Create a new customer order" },
+    menuCard: { mr: "मेनू कार्ड", en: "Menu Card" },
+    menuCardDesc: { mr: "मेनू कार्ड पहा", en: "View Menu Card" },
+    addMenuItem: { mr: "मेनू पदार्थ जोडा", en: "Add Menu Item" },
+    addMenuItemDesc: { mr: "नवीन पदार्थ जोडा", en: "Add new items" },
+    generateBill: { mr: "बिल तयार करा", en: "Generate Bill" },
+    generateBillDesc: { mr: "ऑर्डरसाठी बिल तयार करा", en: "Create bill for order" },
+    addUser: { mr: "वापरकर्ता जोडा", en: "Add User" },
+    addUserDesc: { mr: "नवीन कर्मचारी किंवा ग्राहक नोंदवा", en: "Register new staff or customer" },
+    quickActions: { mr: "झटपट कृती (Quick Actions)", en: "Quick Actions" },
+    todaySchedule: { mr: "आजचे वेळापत्रक", en: "Today's Schedule" },
+    noEventsToday: { mr: "आज कोणतेही कार्यक्रम नाहीत.", en: "No events today." },
+    confirmedAlert: { mr: "आगामी कार्यक्रम (Confirmed)", en: "Upcoming Events (Confirmed)" },
+    pendingAlert: { mr: "प्रलंबित ऑर्डर (Pending)", en: "Pending Orders" },
+    inquiryAlert: { mr: "चौकशी प्रलंबित (Inquiry)", en: "Pending Inquiries" },
+    today: { mr: "आज", en: "Today" },
+    tomorrow: { mr: "उद्या", en: "Tomorrow" },
+    events: { mr: "कार्यक्रम.", en: "events." },
+    pendingEvents: { mr: "कार्यक्रम Pending आहेत!", en: "events are Pending!" },
+    inquiries: { mr: "Inquiries आहेत.", en: "Inquiries." },
+    footer: { mr: "@ 2026 Developed by Deenova Digital", en: "@ 2026 Developed by Deenova Digital" }
+};
+
 export function Home() {
     const navigate = useNavigate();
     const dispatch = useDispatch();
 
-    // --- Modal & Loading State ---
+    // --- State Management ---
     const [isCalendarOpen, setIsCalendarOpen] = useState(false);
     const [isInitialLoad, setIsInitialLoad] = useState(true);
+    const [language, setLanguage] = useState(
+        () => sessionStorage.getItem("selectedLanguage") || "mr"
+    ); // Language state: 'mr' for Marathi, 'en' for English
 
-    // Get counts, calendar, and orderStatus from Redux
+    // Redux Selectors
     const { counts, calendar, orderStatus } = useSelector((state) => state.dashboard);
-
     const user = JSON.parse(localStorage.getItem("user"));
     const role = user?.role;
+
+    // Helper for quick translations
+    const t = (key) => translations[key][language];
 
     // Customer Redirection
     useEffect(() => {
@@ -43,6 +84,14 @@ export function Home() {
             navigate("/menu");
         }
     }, [role, navigate]);
+
+
+    useEffect(() => {
+        sessionStorage.setItem("selectedLanguage", language);
+    }, [language]);
+
+
+
 
     // Load Dashboard Data (With Initial Buffering Logic)
     useEffect(() => {
@@ -79,21 +128,21 @@ export function Home() {
 
     const cards = [
         {
-            title: "मेनू पदार्थ",
+            title: t("menuItems"),
             value: counts?.menuItemCount || 0,
             icon: CakeIcon,
             bgClass: "bg-gradient-to-br from-rose-500 to-pink-600 shadow-pink-500/20",
             path: "/menu",
         },
         {
-            title: "एकूण ऑर्डर्स",
+            title: t("totalOrders"),
             value: counts?.orderCount || 0,
             icon: ClipboardDocumentListIcon,
             bgClass: "bg-gradient-to-br from-blue-500 to-indigo-600 shadow-blue-500/20",
             path: "",
         },
         {
-            title: "आगामी कार्यक्रम",
+            title: t("upcomingEvents"),
             value: counts?.upcomingEventCount || 0,
             icon: CalendarDaysIcon,
             bgClass: "bg-gradient-to-br from-violet-500 to-purple-600 shadow-purple-500/20",
@@ -103,60 +152,52 @@ export function Home() {
 
     const quickActions = [
         {
-            title: "नवीन ऑर्डर",
-            description: "नवीन ग्राहक ऑर्डर तयार करा",
+            title: t("newOrder"),
+            description: t("newOrderDesc"),
             icon: PlusCircleIcon,
             hoverClass: "hover:border-blue-300 hover:bg-blue-50",
             iconBg: "bg-blue-100 text-blue-600",
             path: "/orders",
             onClick: handleOrderClick
         },
+
         {
-            title: "मेनू कार्ड",
-            description: "मेनू कार्ड पहा",
-            icon: DocumentPlusIcon,
-            hoverClass: "hover:border-pink-300 hover:bg-pink-50",
-            iconBg: "bg-pink-100 text-pink-600",
-            path: "/menu",
-        },
-        {
-            title: "मेनू पदार्थ जोडा",
-            description: "नवीन पदार्थ जोडा",
-            icon: CakeIcon,
-            hoverClass: "hover:border-purple-300 hover:bg-purple-50",
-            iconBg: "bg-purple-100 text-purple-600",
-            path: "/addmenu",
-        },
-        {
-            title: "बिल तयार करा",
-            description: "ऑर्डरसाठी बिल तयार करा",
+            title: t("generateBill"),
+            description: t("generateBillDesc"),
             icon: ReceiptPercentIcon,
             hoverClass: "hover:border-amber-300 hover:bg-amber-50",
             iconBg: "bg-amber-100 text-amber-600",
             path: "/invoice",
         },
         {
-            title: "वापरकर्ता जोडा",
-            description: "नवीन कर्मचारी किंवा ग्राहक नोंदवा",
+            title: t("menuCard"),
+            description: t("menuCardDesc"),
+            icon: DocumentPlusIcon,
+            hoverClass: "hover:border-pink-300 hover:bg-pink-50",
+            iconBg: "bg-pink-100 text-pink-600",
+            path: "/menu",
+        },
+        {
+            title: t("addMenuItem"),
+            description: t("addMenuItemDesc"),
+            icon: CakeIcon,
+            hoverClass: "hover:border-purple-300 hover:bg-purple-50",
+            iconBg: "bg-purple-100 text-purple-600",
+            path: "/addmenu",
+        },
+        {
+            title: t("addUser"),
+            description: t("addUserDesc"),
             icon: UserPlusIcon,
             hoverClass: "hover:border-emerald-300 hover:bg-emerald-50",
             iconBg: "bg-emerald-100 text-emerald-600",
             path: "/signin",
-        },
-
-        //  {
-        //     title: "प्लानिंग ",
-        //     description: "नवीन कर्मचारी किंवा ग्राहक नोंदवा",
-        //     icon: UserPlusIcon,
-        //     hoverClass: "hover:border-emerald-300 hover:bg-emerald-50",
-        //     iconBg: "bg-emerald-100 text-emerald-600",
-        //     path: "/planning",
-        // },
+        }
     ];
 
     const customerMenuCard = {
-        title: "मेनू कार्ड",
-        description: "मेनू कार्ड पहा",
+        title: t("menuCard"),
+        description: t("menuCardDesc"),
         icon: DocumentPlusIcon,
         hoverClass: "hover:border-pink-300 hover:bg-pink-50",
         iconBg: "bg-pink-100 text-pink-600",
@@ -168,9 +209,9 @@ export function Home() {
     // --- Time Based Greeting Logic ---
     const getGreeting = () => {
         const hour = new Date().getHours();
-        if (hour < 12) return { text: "शुभ सकाळ", icon: SunIcon, color: "text-amber-500" };
-        if (hour < 18) return { text: "शुभ दुपार", icon: SunIcon, color: "text-orange-500" };
-        return { text: "शुभ संध्याकाळ", icon: MoonIcon, color: "text-indigo-500" };
+        if (hour < 12) return { mr: "शुभ सकाळ", en: "Good Morning", icon: SunIcon, color: "text-amber-500" };
+        if (hour < 18) return { mr: "शुभ दुपार", en: "Good Afternoon", icon: SunIcon, color: "text-orange-500" };
+        return { mr: "शुभ संध्याकाळ", en: "Good Evening", icon: MoonIcon, color: "text-indigo-500" };
     };
     const greeting = getGreeting();
     const GreetingIcon = greeting.icon;
@@ -190,9 +231,7 @@ export function Home() {
     const inquiryEvents = calendar?.filter((e) => e.extendedProps?.status === "Inquiry") || [];
     const pendingEvents = calendar?.filter((e) => e.extendedProps?.status === "Pending") || [];
 
-    // All events for today's schedule
     const allTodayEvents = calendar?.filter((e) => isSameDay(new Date(e.start), today)) || [];
-
     const todayConfirmed = confirmedEvents.filter((e) => isSameDay(new Date(e.start), today));
     const tomorrowConfirmed = confirmedEvents.filter((e) => isSameDay(new Date(e.start), tomorrow));
 
@@ -217,8 +256,8 @@ export function Home() {
                         <ChartBarIcon className="w-10 h-10 text-white animate-pulse" />
                     </span>
                 </span>
-                <h2 className="text-2xl font-black text-slate-800 tracking-tight mb-2">डॅशबोर्ड लोड होत आहे...</h2>
-                <p className="text-slate-500 font-medium text-sm">कृपया प्रतीक्षा करा, माहिती मिळवली जात आहे.</p>
+                <h2 className="text-2xl font-black text-slate-800 tracking-tight mb-2">{t("loadingTitle")}</h2>
+                <p className="text-slate-500 font-medium text-sm">{t("loadingDesc")}</p>
             </div>
         );
     }
@@ -234,24 +273,41 @@ export function Home() {
                     <div>
                         <div className="flex items-center gap-2 mb-1">
                             <GreetingIcon className={`w-5 h-5 ${greeting.color}`} />
-                            <span className="text-sm font-bold text-slate-500 uppercase tracking-wider">{greeting.text}, {user?.name || "Admin"}</span>
+                            <span className="text-sm font-bold text-slate-500 uppercase tracking-wider">{greeting[language]}, {user?.name || "Admin"}</span>
                         </div>
                         <h1 className="text-2xl md:text-4xl font-extrabold text-slate-800 tracking-tight flex items-center gap-3">
                             <ChartBarIcon className="w-8 h-8 text-indigo-600 hidden md:block" />
-                            डॅशबोर्ड
+                            {t("dashboard")}
                         </h1>
                         <p className="text-sm md:text-base text-slate-500 font-medium mt-1">
-                            आपल्या केटरिंग व्यवसायाचा संपूर्ण आढावा व नियंत्रण
+                            {t("dashboardDesc")}
                         </p>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-3">
+                        {/* --- LANGUAGE TOGGLE --- */}
+                        <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200 mr-2 items-center">
+                            <LanguageIcon className="w-5 h-5 text-slate-400 ml-2 mr-1" />
+                            <button
+                                onClick={() => setLanguage("mr")}
+                                className={`px-3 py-1.5 text-sm font-bold rounded-lg transition-all ${language === "mr" ? "bg-white text-indigo-700 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+                            >
+                                मराठी
+                            </button>
+                            <button
+                                onClick={() => setLanguage("en")}
+                                className={`px-3 py-1.5 text-sm font-bold rounded-lg transition-all ${language === "en" ? "bg-white text-indigo-700 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+                            >
+                                EN
+                            </button>
+                        </div>
+
                         <button
                             onClick={() => navigate("/analytics")}
                             className="flex items-center gap-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white px-5 py-2.5 rounded-xl font-bold shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300"
                         >
                             <ChartPieIcon className="w-5 h-5" />
-                            मासिक अहवाल
+                            {t("monthlyReport")}
                         </button>
 
                         <button
@@ -259,10 +315,10 @@ export function Home() {
                             className="flex items-center gap-2 bg-indigo-50 border border-indigo-100 text-indigo-700 px-5 py-2.5 rounded-xl font-bold shadow-sm hover:bg-indigo-600 hover:text-white transition-colors duration-300"
                         >
                             <CalendarDaysIcon className="w-5 h-5" />
-                            कॅलेंडर पहा
+                            {t("viewCalendar")}
                         </button>
 
-                        <div className="hidden md:flex items-center gap-2 bg-emerald-50 border border-emerald-100 px-4 py-2.5 rounded-xl">
+                        <div className="hidden lg:flex items-center gap-2 bg-emerald-50 border border-emerald-100 px-4 py-2.5 rounded-xl">
                             <span className="relative flex h-2.5 w-2.5">
                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
@@ -282,10 +338,10 @@ export function Home() {
                                         <BellAlertIcon className="w-6 h-6 text-emerald-600" />
                                     </div>
                                     <div>
-                                        <h3 className="text-emerald-900 font-bold text-lg">आगामी कार्यक्रम (Confirmed)</h3>
+                                        <h3 className="text-emerald-900 font-bold text-lg">{t("confirmedAlert")}</h3>
                                         <p className="text-emerald-700 text-sm font-medium">
-                                            {todayConfirmed.length > 0 && <span>आज <strong className="text-emerald-900 bg-emerald-200/50 px-1.5 py-0.5 rounded">{todayConfirmed.length}</strong> कार्यक्रम. </span>}
-                                            {tomorrowConfirmed.length > 0 && <span>उद्या <strong className="text-emerald-900 bg-emerald-200/50 px-1.5 py-0.5 rounded">{tomorrowConfirmed.length}</strong> कार्यक्रम.</span>}
+                                            {todayConfirmed.length > 0 && <span>{t("today")} <strong className="text-emerald-900 bg-emerald-200/50 px-1.5 py-0.5 rounded">{todayConfirmed.length}</strong> {t("events")} </span>}
+                                            {tomorrowConfirmed.length > 0 && <span>{t("tomorrow")} <strong className="text-emerald-900 bg-emerald-200/50 px-1.5 py-0.5 rounded">{tomorrowConfirmed.length}</strong> {t("events")}</span>}
                                         </p>
                                     </div>
                                 </div>
@@ -299,10 +355,10 @@ export function Home() {
                                         <ClockIcon className="w-6 h-6 text-amber-600" />
                                     </div>
                                     <div>
-                                        <h3 className="text-amber-900 font-bold text-lg">प्रलंबित ऑर्डर (Pending)</h3>
+                                        <h3 className="text-amber-900 font-bold text-lg">{t("pendingAlert")}</h3>
                                         <p className="text-amber-700 text-sm font-medium">
-                                            {todayPending.length > 0 && <span>आजचे <strong className="text-red-600">{todayPending.length}</strong> कार्यक्रम Pending आहेत! </span>}
-                                            {tomorrowPending.length > 0 && <span>उद्याचे <strong className="text-amber-900">{tomorrowPending.length}</strong> कार्यक्रम Pending आहेत.</span>}
+                                            {todayPending.length > 0 && <span>{t("today")} <strong className="text-red-600">{todayPending.length}</strong> {t("pendingEvents")} </span>}
+                                            {tomorrowPending.length > 0 && <span>{t("tomorrow")} <strong className="text-amber-900">{tomorrowPending.length}</strong> {t("pendingEvents")}</span>}
                                         </p>
                                     </div>
                                 </div>
@@ -316,10 +372,10 @@ export function Home() {
                                         <QuestionMarkCircleIcon className="w-6 h-6 text-blue-600" />
                                     </div>
                                     <div>
-                                        <h3 className="text-blue-900 font-bold text-lg">चौकशी प्रलंबित (Inquiry)</h3>
+                                        <h3 className="text-blue-900 font-bold text-lg">{t("inquiryAlert")}</h3>
                                         <p className="text-blue-700 text-sm font-medium">
-                                            {todayInquiry.length > 0 && <span>आज <strong className="text-blue-900">{todayInquiry.length}</strong> Inquiries आहेत. </span>}
-                                            {tomorrowInquiry.length > 0 && <span>उद्या <strong className="text-blue-900">{tomorrowInquiry.length}</strong> Inquiries आहेत.</span>}
+                                            {todayInquiry.length > 0 && <span>{t("today")} <strong className="text-blue-900">{todayInquiry.length}</strong> {t("inquiries")} </span>}
+                                            {tomorrowInquiry.length > 0 && <span>{t("tomorrow")} <strong className="text-blue-900">{tomorrowInquiry.length}</strong> {t("inquiries")}</span>}
                                         </p>
                                     </div>
                                 </div>
@@ -331,10 +387,8 @@ export function Home() {
                 {/* --- DASHBOARD STATS & TODAY'S SCHEDULE GRID --- */}
                 {role !== "Customer" && (
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200">
-                        
-                        {/* Left Side: KPI & Status Cards (Spans 8 columns) */}
+
                         <div className="lg:col-span-8 space-y-6">
-                            {/* Main KPI Cards */}
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
                                 {cards.map((card, index) => {
                                     const Icon = card.icon;
@@ -365,7 +419,7 @@ export function Home() {
                             </div>
 
                             {/* Order Status Cards */}
-                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                                 <div className="bg-white border border-amber-100 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-left">
                                     <div className="p-3 bg-amber-50 text-amber-500 rounded-xl"><ClockIcon className="w-6 h-6" /></div>
                                     <div>
@@ -382,13 +436,13 @@ export function Home() {
                                     </div>
                                 </div>
 
-                                {/* <div className="bg-white border border-blue-100 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-left">
+                                <div className="bg-white border border-blue-100 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-left">
                                     <div className="p-3 bg-blue-50 text-blue-500 rounded-xl"><QuestionMarkCircleIcon className="w-6 h-6" /></div>
                                     <div>
                                         <p className="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider">Inquiry</p>
                                         <h2 className="text-xl sm:text-2xl font-black text-slate-800">{orderStatus?.Inquiry || 0}</h2>
                                     </div>
-                                </div> */}
+                                </div>
 
                                 <div className="bg-white border border-rose-100 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-left">
                                     <div className="p-3 bg-rose-50 text-rose-500 rounded-xl"><XCircleIcon className="w-6 h-6" /></div>
@@ -400,19 +454,18 @@ export function Home() {
                             </div>
                         </div>
 
-                        {/* --- NEW ADVANCED FEATURE: Today's Schedule (Spans 4 columns) --- */}
+                        {/* --- Today's Schedule --- */}
                         <div className="lg:col-span-4 bg-white rounded-3xl p-6 shadow-sm border border-slate-200 relative overflow-hidden flex flex-col h-full">
-                            {/* Decorative Background for Schedule */}
                             <div className="absolute -top-10 -right-10 w-40 h-40 bg-indigo-50 rounded-full blur-3xl opacity-60 pointer-events-none"></div>
-                            
+
                             <div className="flex items-center justify-between mb-6 relative z-10">
                                 <div>
                                     <h2 className="text-lg font-black text-slate-800 flex items-center gap-2">
                                         <ClockIcon className="w-5 h-5 text-indigo-500" />
-                                        आजचे वेळापत्रक
+                                        {t("todaySchedule")}
                                     </h2>
                                     <p className="text-xs font-bold text-slate-500 mt-1">
-                                        {today.toLocaleDateString('mr-IN', { weekday: 'long', month: 'long', day: 'numeric' })}
+                                        {today.toLocaleDateString(language === 'mr' ? 'mr-IN' : 'en-IN', { weekday: 'long', month: 'long', day: 'numeric' })}
                                     </p>
                                 </div>
                                 <div className="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-xs font-extrabold shadow-sm">
@@ -424,22 +477,20 @@ export function Home() {
                                 {allTodayEvents.length === 0 ? (
                                     <div className="h-full flex flex-col items-center justify-center text-center py-10 opacity-70">
                                         <CalendarDaysIcon className="w-12 h-12 text-slate-300 mb-3" />
-                                        <p className="text-slate-500 font-bold">आज कोणतेही कार्यक्रम नाहीत.</p>
+                                        <p className="text-slate-500 font-bold">{t("noEventsToday")}</p>
                                     </div>
                                 ) : (
                                     allTodayEvents.map((event, idx) => {
                                         const shifts = event.extendedProps?.shifts || [];
                                         const status = event.extendedProps?.status;
-                                        
-                                        // Status Colors
+
                                         let statusColor = "bg-slate-100 text-slate-600";
-                                        if(status === "Confirmed") statusColor = "bg-emerald-100 text-emerald-700 border-emerald-200";
-                                        if(status === "Pending") statusColor = "bg-amber-100 text-amber-700 border-amber-200";
-                                        if(status === "Inquiry") statusColor = "bg-blue-100 text-blue-700 border-blue-200";
+                                        if (status === "Confirmed") statusColor = "bg-emerald-100 text-emerald-700 border-emerald-200";
+                                        if (status === "Pending") statusColor = "bg-amber-100 text-amber-700 border-amber-200";
+                                        if (status === "Inquiry") statusColor = "bg-blue-100 text-blue-700 border-blue-200";
 
                                         return (
                                             <div key={idx} className="group flex gap-4 relative">
-                                                {/* Timeline Line */}
                                                 <div className="flex flex-col items-center">
                                                     <div className="w-3 h-3 rounded-full bg-indigo-400 ring-4 ring-indigo-50 z-10 mt-1.5 group-hover:scale-125 transition-transform"></div>
                                                     {idx !== allTodayEvents.length - 1 && (
@@ -447,7 +498,6 @@ export function Home() {
                                                     )}
                                                 </div>
 
-                                                {/* Event Card */}
                                                 <div className="flex-1 bg-slate-50 hover:bg-indigo-50/50 transition-colors border border-slate-100 rounded-2xl p-4 mb-2 shadow-sm">
                                                     <div className="flex justify-between items-start mb-2">
                                                         <h4 className="font-extrabold text-slate-800 text-sm leading-tight">
@@ -457,7 +507,7 @@ export function Home() {
                                                             {status}
                                                         </span>
                                                     </div>
-                                                    
+
                                                     <div className="text-xs font-semibold text-slate-500 flex items-center gap-1.5 mb-2">
                                                         <CakeIcon className="w-3.5 h-3.5" />
                                                         {event.extendedProps?.eventType || "Event"}
@@ -483,7 +533,7 @@ export function Home() {
                 {/* --- QUICK ACTIONS --- */}
                 <div className="animate-in fade-in duration-500 delay-300">
                     <h2 className="text-lg font-bold mb-4 text-slate-800 flex items-center gap-2">
-                        झटपट कृती (Quick Actions)
+                        {t("quickActions")}
                     </h2>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
@@ -509,7 +559,7 @@ export function Home() {
                                             {action.description}
                                         </p>
 
-                                        {action.title === "नवीन ऑर्डर" && counts?.unreadOrders > 0 && (
+                                        {action.title === t("newOrder") && counts?.unreadOrders > 0 && (
                                             <span className="absolute top-4 right-4 bg-red-500 text-white rounded-full px-2 py-0.5 text-[10px] font-bold shadow-sm animate-pulse">
                                                 {counts.unreadOrders} New
                                             </span>
@@ -522,7 +572,7 @@ export function Home() {
                 </div>
 
                 <div className="pt-8 pb-4 text-center">
-                    <p className="text-sm font-medium text-slate-400">@ 2026 Developed by Deenova Digital</p>
+                    <p className="text-sm font-medium text-slate-400">{t("footer")}</p>
                 </div>
 
             </div>
