@@ -12,7 +12,7 @@ import { SelectEventCalenderModel } from "../EventCalendarModal/SelectEventCalen
 export function Menu() {
     const dispatch = useDispatch();
     const SHIFT_OPTIONS = ["सकाळ", "संध्याकाळ", "रात्र"];
-    const eventTypes = ["लग्न", "साखरपुडा", "वाढदिवस", "गृहप्रवेश", "मुंज", "नामकरण", "कॉर्पोरेट इव्हेंट", "इतर"];
+    const eventTypes = ["लग्न", "साखरपुडा", "वाढदिवस", "गृहप्रवेश", "मुंज", "नामकरण", "कॉर्पोरेट इव्हेंट","स्वागत सभारंभ","निरोप सभारंभ", "इतर"];
 
     const [showSplash, setShowSplash] = useState(true);
     useEffect(() => {
@@ -31,6 +31,8 @@ export function Menu() {
 
     const [showMenu, setShowMenu] = useState(false);
     const { menus, loading } = useSelector((state) => state.menuList);
+
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     // --- 🚨 NEW: Selected Items mapped to "Date_Shift" key ---
     // Example: { "2026-08-08_सकाळ": [item1, item2] }
@@ -128,9 +130,9 @@ export function Menu() {
     const totalSelectedItemsAcrossShifts = Object.values(selectedItems).flat().length;
 
     // --- 🚨 NEW: Bulk Submit API Logic ---
-    const handleConfirmOrder = async () => {
+ const handleConfirmOrder = async () => {
+        setIsSubmitting(true); // लोडिंग सुरू करा
         try {
-            // प्रत्येक तारखेसाठी एक स्वतंत्र Order Payload बनवा
             const promises = selectedDatesConfig.map((config) => {
                 const shiftsForDate = config.shifts.map((shift) => {
                     const tabKey = `${config.date}_${shift}`;
@@ -166,7 +168,6 @@ export function Menu() {
                 return dispatch(saveCustomerMenu(payload)).unwrap();
             });
 
-            // सर्व ऑर्डर्स एकाच वेळी सेव्ह करा
             await Promise.all(promises);
             
             alert("All Orders Saved Successfully!");
@@ -177,6 +178,8 @@ export function Menu() {
 
         } catch (err) {
             alert(err.message || "Unable to save orders");
+        } finally {
+            setIsSubmitting(false); // लोडिंग बंद करा
         }
     };
 
@@ -185,14 +188,22 @@ export function Menu() {
         c.shifts.map(s => ({ key: `${c.date}_${s}`, date: c.date, shift: s, eventType: c.eventType }))
     );
 
-    if (loading) {
+ if (loading) {
         return (
-            <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50">
-                <span className="relative flex h-16 w-16 mb-4">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-16 w-16 bg-blue-600"></span>
+            <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center font-sans relative overflow-hidden">
+                {/* Background Glow Effect */}
+                <div className="absolute top-0 left-0 w-full h-[400px] bg-gradient-to-b from-indigo-100/40 to-transparent pointer-events-none -z-10"></div>
+                
+                {/* Pulsing Loading Spinner */}
+                <span className="relative flex h-20 w-20 mb-6">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-60"></span>
+                    <span className="relative inline-flex rounded-full h-20 w-20 bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
+                      <ShoppingCartIcon className="w-10 h-10 text-white animate-pulse" />
+                    </span>
                 </span>
-                <h2 className="text-xl font-bold text-slate-600 animate-pulse">मेनू लोड होत आहे...</h2>
+                
+                <h2 className="text-2xl font-black text-slate-800 tracking-tight mb-2">मेनू लोड होत आहे...</h2>
+                <p className="text-slate-500 font-medium text-sm">कृपया प्रतीक्षा करा, सर्व्हिसमधून माहिती मिळवली जात आहे.</p>
             </div>
         );
     }
@@ -492,13 +503,23 @@ export function Menu() {
                                                 </div>
                                             )}
                                         </div>
-                                        <button
-                                            onClick={handleConfirmOrder}
-                                            disabled={allTabsConfig.some(tab => (selectedItems[tab.key] || []).length === 0)}
-                                            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold py-3.5 rounded-2xl shadow-[0_8px_20px_rgba(79,70,229,0.3)] disabled:opacity-50 disabled:cursor-not-allowed"
-                                        >
-                                            सर्व ऑर्डर्स निश्चित करा
-                                        </button>
+                                     <button
+                            onClick={handleConfirmOrder}
+                            disabled={isSubmitting || allTabsConfig.some(tab => (selectedItems[tab.key] || []).length === 0)}
+                            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold py-3.5 rounded-2xl shadow-[0_8px_20px_rgba(79,70,229,0.3)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all"
+                        >
+                            {isSubmitting ? (
+                                <>
+                                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    ऑर्डर सेव्ह होत आहे...
+                                </>
+                            ) : (
+                                "सर्व ऑर्डर्स निश्चित करा"
+                            )}
+                        </button>
                                     </div>
                                 </div>
                             </div>

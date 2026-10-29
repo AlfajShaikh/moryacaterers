@@ -192,6 +192,15 @@ export function Home() {
             hoverClass: "hover:border-emerald-300 hover:bg-emerald-50",
             iconBg: "bg-emerald-100 text-emerald-600",
             path: "/signin",
+        },
+
+         {
+            title: t("addUser"),
+            description: t("addUserDesc"),
+            icon: UserPlusIcon,
+            hoverClass: "hover:border-emerald-300 hover:bg-emerald-50",
+            iconBg: "bg-emerald-100 text-emerald-600",
+            path: "/planning",
         }
     ];
 

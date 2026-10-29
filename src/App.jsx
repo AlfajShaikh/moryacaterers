@@ -34,15 +34,15 @@ function App() {
             <Route path="/orders" element={<Orders />} />
             <Route path="/addmenu" element={<AddMenu />} />
             <Route path="/menu" element={< Menu />} />
-             <Route path="/invoice" element={< Invoice />} />
-                          <Route path="/analytics" element={< BusinessAnalytics />} />
+            <Route path="/invoice" element={< Invoice />} />
+            <Route path="/analytics" element={< BusinessAnalytics />} />
 
 
 
             {/* Redirect any unknown route */}
             <Route path="*" element={<Navigate to="/" replace />} />
             <Route path="/signin" element={<SignIn />} />
-             <Route path="/planning" element={<Planning />} />
+            <Route path="/planning" element={<Planning />} />
 
           </Routes>
         </>
